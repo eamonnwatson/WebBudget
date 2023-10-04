@@ -8,6 +8,7 @@
     <DockerfileContext>.</DockerfileContext>
     <AssemblyVersion>1.0.39.23276</AssemblyVersion>
     <FileVersion>1.0.39.23276</FileVersion>
+    <Platforms>AnyCPU;ARM64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
