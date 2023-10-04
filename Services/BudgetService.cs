@@ -102,13 +102,13 @@ public class BudgetService
         if (!txns.Any())
             return output;
 
-        var nextPayment = txns.First(t => t.Amount < 0);
-        var nextIncome = txns.First(t => t.Amount > 0);
+        var nextPayment = txns.FirstOrDefault(t => t.Amount < 0);
+        var nextIncome = txns.FirstOrDefault(t => t.Amount > 0);
         var lowest = txns.MinBy(t => t.Balance)!;
         var highest = txns.MaxBy(t => t.Balance)!;
 
-        output.Add(new TransactionVM() { Description = "Next Payment", Amount = nextPayment.Amount, Date = nextPayment.Date });
-        output.Add(new TransactionVM() { Description = "Next Income", Amount = nextIncome.Amount, Date = nextIncome.Date });
+        if (nextPayment is not null) output.Add(new TransactionVM() { Description = "Next Payment", Amount = nextPayment.Amount, Date = nextPayment.Date });
+        if (nextIncome is not null) output.Add(new TransactionVM() { Description = "Next Income", Amount = nextIncome.Amount, Date = nextIncome.Date });
         output.Add(new TransactionVM() { Description = "Lowest in 6 Months", Amount = lowest.Balance, Date = lowest.Date });
         output.Add(new TransactionVM() { Description = "Highest in 6 Months", Amount = highest.Balance, Date = highest.Date });
 
