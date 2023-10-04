@@ -1,0 +1,153 @@
+﻿@page "/Edit"
+@using System.Collections.ObjectModel;
+@using Microsoft.AspNetCore.Components.Forms
+@inject BudgetService Service;
+@inject ISnackbar Snackbar
+
+<PageTitle>Edit</PageTitle>
+
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.h3">Recurring Transactions</MudText>
+
+    <MudDataGrid Items="@recurringTransactions" Dense="true" SortMode="SortMode.None">
+        <Columns>
+            <PropertyColumn Property="x => x.StartDate" Title="Start Date" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.NextDate" Title="Next Date" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.Description" />
+            <PropertyColumn Property="x => x.Amount" CellStyleFunc="@CellStyleFunction" Format="C2" />
+            <PropertyColumn Property="x => x.TransactionType.ToString()" Title="Frequency" />
+            <TemplateColumn>
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="@Size.Small" OnClick="(e) => DeleteRecord(context.Item)" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+</MudPaper>
+
+
+<EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+
+    <MudCard Class="mt-10">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h3">Add Transaction</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTextField Label="Description" HelperText="Max 30 Characters" @bind-Value="model.Description" For="@(() => model.Description)" />
+            <MudDatePicker Label="Start Date" DateFormat="yyyy-MM-dd" @bind-Date="model.StartDate" IsDateDisabledFunc="DisableDates" For="@(() => model.StartDate)" />
+            <MudSelect Label="Frequency" @bind-Value="model.TransactionType" For="@(() => model.TransactionType)">
+                @foreach (TransactionType item in Enum.GetValues(typeof(TransactionType)))
+                {
+                    <MudSelectItem Value="@item">@item</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField Label="Amount" @bind-Value="model.Amount" For="@(() => model.Amount)" />
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success" Class="ml-auto">Add</MudButton>
+        </MudCardActions>
+    </MudCard>
+
+</EditForm>
+
+<MudDialog IsVisible="deleteDialogVisible" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">DELETE RECORD</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText>Do you really want to delete this record? This process cannot be undone.<br />@txnText</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="DeleteSubmit">Delete</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code{
+    private ObservableCollection<RecurringTransactionVM> recurringTransactions = new ObservableCollection<RecurringTransactionVM>();
+    private RecurringTransactionVM model = new RecurringTransactionVM();
+    private bool deleteDialogVisible = false;
+    private DialogOptions dialogOptions = new DialogOptions() { MaxWidth = MaxWidth.Large, NoHeader = false, FullWidth = true };
+    private string txnText = string.Empty;
+    private RecurringTransactionVM? txnToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var data = await Service.GetRecurringTransactions();
+        recurringTransactions = new ObservableCollection<RecurringTransactionVM>(data.Where(t => t.NextDate is not null).OrderBy(t => t.NextDate).ThenByDescending(t => t.Amount));
+    }
+
+    private Func<RecurringTransactionVM, string> CellStyleFunction => x =>
+    {
+        var output = "text-align:right;";
+
+        if (x.Amount < 0)
+            output += "color:var(--mud-palette-error);";
+
+        return output;
+    };
+
+    private void DeleteRecord(RecurringTransactionVM txn)
+    {
+        txnText = $"Transaction : {txn.Description} ({txn.Amount:C2})";
+        txnToDelete = txn;
+        deleteDialogVisible = true;
+    }
+
+    private void Cancel()
+    {
+        deleteDialogVisible = false;
+        txnToDelete = null;
+    }
+
+    private async Task DeleteSubmit()
+    {
+        deleteDialogVisible = false;
+        if (txnToDelete is null)
+        {
+            Snackbar.Add("No Record To Remove", Severity.Error);
+            return;
+        }
+        var result = await Service.DeleteTxn(txnToDelete.Id);
+
+        if (result == false)
+        {
+            Snackbar.Add("Error Removing Record", Severity.Error);
+            return;
+        }
+
+        recurringTransactions.Remove(txnToDelete);
+        txnToDelete = null;
+        Snackbar.Add("Item Deleted Successfully", Severity.Success);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        var result = await Service.AddTxn(model);
+
+        if (result == false)
+        {
+            Snackbar.Add("Error Adding Record", Severity.Error);
+            return;
+        }
+
+        model.NextDate = model.StartDate.GetValueOrDefault().ToDateOnly();
+        recurringTransactions.Add(model);
+
+        StateHasChanged();
+        Snackbar.Add("Item Added Successfully", Severity.Success);
+        model = new();
+    }
+
+    private bool DisableDates(DateTime date)
+    {
+        if (date > DateTime.Today)
+            return false;
+
+        return true;
+    }
+
+}
