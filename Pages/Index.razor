@@ -23,7 +23,7 @@
     </RowTemplate>
 </MudTable>
 
-<MudTable Items="@Data.TransactionList" Elevation="10" Class="mt-10">
+<MudTable Items="@Data.TransactionList" Elevation="10" Class="mt-10" RowClassFunc="TableClassFunction" Dense="true" >
     <HeaderContent>
         <MudTh>Date</MudTh>
         <MudTh>Description</MudTh>
@@ -36,6 +36,9 @@
         <MudTd Style="@GetClass(context.Amount)">@context.Amount.ToString("C2")</MudTd>
         <MudTd Style="@GetClass(context.Balance)">@context.Balance.ToString("C2")</MudTd>
     </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
 </MudTable>
 
 <div Class="d-flex justify-end my-10">
@@ -60,6 +63,11 @@
         return output;
     }
 
+    private string TableClassFunction(TransactionVM txn, int index)
+    {
+        if (txn.Description.Equals("Current Balance"))
+            return "mud-theme-success";
 
-
+        return string.Empty;
+    }
 }

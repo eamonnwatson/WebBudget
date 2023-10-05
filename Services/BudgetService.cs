@@ -10,10 +10,12 @@ namespace WebBudget.Services;
 public class BudgetService
 {
     private readonly BudgetContext context;
+    private readonly ILogger<BudgetService> logger;
 
-    public BudgetService(BudgetContext context)
+    public BudgetService(BudgetContext context, ILogger<BudgetService> logger)
     {
         this.context = context;
+        this.logger = logger;
     }
 
     public async Task<BudgetVM> GetData()
@@ -28,19 +30,23 @@ public class BudgetService
             .OrderBy(t => t.TransactionDate)
             .ToListAsync();
 
-        vm.CurrentBalance = account.CurrentBalance;
-        vm.TransactionList.AddRange(pastTxn.Select(t => new TransactionVM() { Amount = t.Amount, Date = t.TransactionDate, Description = t.Description }));
-
+        var pastTxnVMs = pastTxn.Select(t => new TransactionVM() { Amount = t.Amount, Date = t.TransactionDate, Description = t.Description }).OrderBy(t => t.Date).ThenByDescending(t => t.Amount).ThenBy(t => t.Description);
+        var futureTxnVMs = new List<TransactionVM>();
         foreach (var item in recTxn)
         {
-            vm.TransactionList.AddRange(GetTxns(item));
+            futureTxnVMs.AddRange(GetTxns(item).Where(t => t.Date > DateTime.Today.ToDateOnly()));
         }
 
-        vm.TransactionList = vm.TransactionList.OrderBy(t => t.Date)
+        futureTxnVMs = futureTxnVMs.OrderBy(t => t.Date)
             .ThenByDescending(t => t.Amount)
             .ThenBy(t => t.Description).ToList();
 
-        UpdateTxnBalance(vm.TransactionList, vm.CurrentBalance);
+        vm.CurrentBalance = account.CurrentBalance;
+        vm.TransactionList.AddRange(pastTxnVMs);
+        vm.TransactionList.Add(new TransactionVM() { Date = DateTime.Today.ToDateOnly(), Amount = 0, Balance = vm.CurrentBalance, Description = "Current Balance"  });
+        vm.TransactionList.AddRange(futureTxnVMs);
+
+        UpdateTxnBalance(vm.TransactionList);
 
         vm.TransactionSummary = GetSummaryData(vm.TransactionList.Where(t => t.Date > DateTime.Today.ToDateOnly()));
 
@@ -115,22 +121,26 @@ public class BudgetService
         return output;
     }
 
-    private static void UpdateTxnBalance(List<TransactionVM> txns, decimal balance)
+    private static void UpdateTxnBalance(List<TransactionVM> txns)
     {
-        var origBalance = balance;
+        var currBalanceTxn = txns.First(t => t.Description.Equals("Current Balance"));
+        var balance = currBalanceTxn.Balance;
+        var index = Array.FindIndex(txns.ToArray(), t => t == currBalanceTxn);
+
         foreach (var item in txns.Where(t => t.Date > DateTime.Today.ToDateOnly()))
         {
             balance += item.Amount;
             item.Balance = balance;
         }
 
-        foreach (var item in txns.Where(t => t.Date <= DateTime.Today.ToDateOnly()).Reverse())
-        {
-            origBalance -= item.Amount;
-            item.Balance = origBalance;
-        }
-    }
+        if (index <= 1)
+            return;
 
+        //for (int i = index - 1; i >= 0; i--)
+        //{
+        //    txns[i].Balance = txns[i + 1].Balance -= txns[i].Amount;
+        //}
+    }
     private static IEnumerable<TransactionVM> GetTxns(RecurringTransaction txn)
     {
         var output = new List<TransactionVM>();
@@ -172,7 +182,7 @@ public class BudgetService
                 break;
         }
 
-        return output.Where(o => o.Date > DateTime.Today.ToDateOnly());
+        return output.Where(o => o.Date >= DateTime.Today.ToDateOnly());
 
     }
 

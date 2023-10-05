@@ -12,7 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
-builder.Services.AddDbContext<BudgetContext>(opt => opt.UseSqlite(builder.Configuration.GetConnectionString("DB")));
+builder.Services.AddDbContext<BudgetContext>(opt => 
+    {
+        opt.UseSqlite(builder.Configuration.GetConnectionString("DB"));
+        
+        if (builder.Environment.IsDevelopment())
+        {
+            opt.EnableDetailedErrors();
+            opt.EnableSensitiveDataLogging();
+        }
+    }); 
+
 builder.Services.AddScoped<BudgetService>();
 builder.Services.AddHostedService<BalanceService>();
 
