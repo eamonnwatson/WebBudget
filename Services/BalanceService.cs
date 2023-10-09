@@ -31,8 +31,8 @@ public class BalanceService : BackgroundService
             var service = scope.ServiceProvider.GetRequiredService<BudgetService>();
 
             var account = await service.GetAccount();
-            
-            if ((DateTime.Today - account.LastUpdated).TotalHours > 24)
+
+            if (account.LastUpdated.Date < DateTime.Today)
             {
                 logger.LogInformation("Account updated more than 24 hours ago.");
                 var recurringtxns = (await service.GetRecurringTransactions()).Where(t => t.NextDate.GetValueOrDefault() == DateTime.Today.ToDateOnly());

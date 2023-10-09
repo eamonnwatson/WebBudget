@@ -11,11 +11,11 @@
         </CardHeaderContent>
     </MudCardHeader>
     <MudCardContent style="background-color:var(--mud-palette-info-darken);">
-        <MudText Typo="Typo.h1" Align="Align.Right"><b>@Data.CurrentBalance.ToString("C2")</b></MudText>
+        <MudText Typo="Typo.h1" Align="Align.Right"><b>@data.CurrentBalance.ToString("C2")</b></MudText>
     </MudCardContent>
 </MudCard>
 
-<MudTable Items="@Data.TransactionSummary" Elevation="10" Class="mt-10">
+<MudTable Items="@data.TransactionSummary" Elevation="10" Class="mt-10">
     <RowTemplate>
         <MudTd>@context.Description</MudTd>
         <MudTd Style="@GetClass(context.Amount)">@context.Amount.ToString("C2")</MudTd>
@@ -23,7 +23,7 @@
     </RowTemplate>
 </MudTable>
 
-<MudTable Items="@Data.TransactionList" Elevation="10" Class="mt-10" RowClassFunc="TableClassFunction" Dense="true" >
+<MudTable Items="@data.TransactionList" Elevation="10" Class="mt-10" RowClassFunc="TableClassFunction" Dense="true" RowsPerPage="25" CurrentPage="@currPage">
     <HeaderContent>
         <MudTh>Date</MudTh>
         <MudTh>Description</MudTh>
@@ -46,11 +46,17 @@
 </div>
 
 @code{
-    public BudgetVM Data { get; set; } = new BudgetVM();
+
+    private BudgetVM data = new BudgetVM();
+    int currPage = 0;
 
     protected override async Task OnInitializedAsync()
     {
-        Data = await service.GetData();
+        data = await service.GetData();
+
+        var currBalanceItem = data.TransactionList.First(t => t.Description == "Current Balance");
+        currPage = data.TransactionList.IndexOf(currBalanceItem) / 25;
+
     }
 
     private string GetClass(decimal amount)

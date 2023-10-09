@@ -21,7 +21,7 @@ public class BudgetService
     public async Task<BudgetVM> GetData()
     {
         var vm = new BudgetVM();
-        var account = await context.Accounts.FirstAsync();
+        var account = await GetAccount();
         var recTxn = await context.RecurringTransactions.ToListAsync();
         var startDate = DateTime.Today.ToDateOnly().AddMonths(-1);
 
@@ -55,7 +55,7 @@ public class BudgetService
 
     public async Task<Account> GetAccount()
     {
-        return await context.Accounts.FirstAsync();
+        return await context.Accounts.OrderBy(a => a.Id).FirstAsync();
     }
 
     public async Task<List<RecurringTransactionVM>> GetRecurringTransactions()
@@ -133,13 +133,16 @@ public class BudgetService
             item.Balance = balance;
         }
 
+        if (index >= 1)
+            txns[index - 1].Balance = txns[index].Balance;
+
         if (index <= 1)
             return;
 
-        //for (int i = index - 1; i >= 0; i--)
-        //{
-        //    txns[i].Balance = txns[i + 1].Balance -= txns[i].Amount;
-        //}
+        for (int i = index - 2; i >= 0; i--)
+        {
+            txns[i].Balance = txns[i + 1].Balance - txns[i].Amount;
+        }
     }
     private static IEnumerable<TransactionVM> GetTxns(RecurringTransaction txn)
     {

@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
-    <AssemblyVersion>1.0.39.23276</AssemblyVersion>
-    <FileVersion>1.0.39.23276</FileVersion>
+    <AssemblyVersion>1.0.43.23282</AssemblyVersion>
+    <FileVersion>1.0.43.23282</FileVersion>
     <Platforms>AnyCPU;ARM64</Platforms>
   </PropertyGroup>
 
