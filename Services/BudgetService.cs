@@ -141,7 +141,7 @@ public class BudgetService
 
         for (int i = index - 2; i >= 0; i--)
         {
-            txns[i].Balance = txns[i + 1].Balance - txns[i].Amount;
+            txns[i].Balance = txns[i + 1].Balance - txns[i+1].Amount;
         }
     }
     private static IEnumerable<TransactionVM> GetTxns(RecurringTransaction txn)
