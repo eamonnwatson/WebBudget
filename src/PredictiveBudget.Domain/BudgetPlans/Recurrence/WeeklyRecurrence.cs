@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using PredictiveBudget.Domain.Common;
 
-namespace PredictiveBudget.Domain;
+namespace PredictiveBudget.Domain.BudgetPlans.Recurrence;
 
 public sealed record WeeklyRecurrence(
     int IntervalWeeks,

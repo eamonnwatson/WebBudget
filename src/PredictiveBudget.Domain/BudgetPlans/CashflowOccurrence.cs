@@ -1,4 +1,6 @@
-﻿namespace PredictiveBudget.Domain;
+﻿using PredictiveBudget.Domain.Common;
+
+namespace PredictiveBudget.Domain.BudgetPlans;
 
 public sealed record CashflowOccurrence(
     DateOnly Date,

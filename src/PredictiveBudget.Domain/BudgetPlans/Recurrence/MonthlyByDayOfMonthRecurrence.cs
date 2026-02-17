@@ -1,4 +1,6 @@
-﻿namespace PredictiveBudget.Domain;
+﻿using PredictiveBudget.Domain.Common;
+
+namespace PredictiveBudget.Domain.BudgetPlans.Recurrence;
 
 public sealed record MonthlyByDayOfMonthRecurrence(
     int IntervalMonths,

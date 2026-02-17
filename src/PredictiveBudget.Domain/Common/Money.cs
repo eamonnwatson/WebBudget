@@ -1,4 +1,4 @@
-﻿namespace PredictiveBudget.Domain;
+﻿namespace PredictiveBudget.Domain.Common;
 
 public readonly record struct Money(decimal Amount, string Currency)
 {

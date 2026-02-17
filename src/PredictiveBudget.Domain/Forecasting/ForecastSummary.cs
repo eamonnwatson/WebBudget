@@ -1,4 +1,6 @@
-﻿namespace PredictiveBudget.Domain;
+﻿using PredictiveBudget.Domain.Common;
+
+namespace PredictiveBudget.Domain.Forecasting;
 
 public sealed record ForecastSummary(
     Money MinBalance, DateOnly MinDate,

@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using PredictiveBudget.Domain.Common;
 
-namespace PredictiveBudget.Domain;
+namespace PredictiveBudget.Domain.BudgetPlans;
 
 public sealed class OccurrenceOverride
 {

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using PredictiveBudget.Domain.BudgetPlans;
+using PredictiveBudget.Domain.Common;
 
-namespace PredictiveBudget.Domain;
+namespace PredictiveBudget.Domain.Forecasting;
 
 public sealed class ForecastEngine : IForecastEngine
 {

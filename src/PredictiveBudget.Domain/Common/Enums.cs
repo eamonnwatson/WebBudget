@@ -1,4 +1,4 @@
-﻿namespace PredictiveBudget.Domain;
+﻿namespace PredictiveBudget.Domain.Common;
 
 public enum TransactionDirection { Inflow = 1, Outflow = 2 }
 

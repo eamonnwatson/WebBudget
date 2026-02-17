@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PredictiveBudget.Domain;
+﻿namespace PredictiveBudget.Domain.Common;
 
 public readonly record struct DateRange(DateOnly Start, DateOnly End)
 {

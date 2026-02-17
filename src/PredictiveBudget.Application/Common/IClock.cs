@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PredictiveBudget.Application.Common;
+﻿namespace PredictiveBudget.Application.Common;
 
 public interface IClock
 {
