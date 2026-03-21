@@ -1,0 +1,250 @@
+using MudBlazor;
+using NSubstitute;
+using PredictiveBudget.Application.Features.BudgetPlans;
+using PredictiveBudget.Domain.BudgetPlans;
+using PredictiveBudget.Domain.BudgetPlans.Recurrence;
+using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Forecasting;
+using PredictiveBudget.Web.Components.Pages;
+using PredictiveBudget.Web.Components.Pages.Models;
+using PredictiveBudget.Web.Tests.TestSupport;
+
+namespace PredictiveBudget.Web.Tests;
+
+public sealed class PlanDetailsTests
+{
+    [Fact]
+    public async Task OnParametersSetAsync_LoadsPlanAndSeedsBalanceForm()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 125m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var component = CreateComponent(service, plan.PlanId);
+
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+
+        var loadedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan?>(component, "_plan");
+        var balanceForm = ReflectionTestHelper.GetPrivateField<BalanceUpdateFormModel>(component, "_balanceForm");
+        Assert.NotNull(loadedPlan);
+        Assert.Equal(125m, balanceForm.Amount);
+        Assert.Equal(new DateTime(2026, 3, 20), balanceForm.BalanceAsOfDate);
+    }
+
+    [Fact]
+    public async Task UpdateBalanceAsync_UpdatesPlanState()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 125m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var component = CreateComponent(service, plan.PlanId);
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+        ReflectionTestHelper.SetPrivateField(component, "_balanceForm", BalanceUpdateFormModel.CreateDefault(300m, new DateOnly(2026, 3, 25)));
+
+        await ReflectionTestHelper.InvokeAsync(component, "UpdateBalanceAsync");
+
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        Assert.Equal(300m, updatedPlan.StartingBalance.Amount);
+        Assert.Equal(new DateOnly(2026, 3, 25), updatedPlan.BalanceAsOfDate);
+    }
+
+    [Fact]
+    public async Task AddRecurringRuleAsync_AddsRuleAndResetsForm()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 125m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var component = CreateComponent(service, plan.PlanId);
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+        var form = new RecurringRuleFormModel
+        {
+            Name = "Payday",
+            Direction = TransactionDirection.Inflow,
+            Amount = 1000m,
+            EffectiveStartDate = new DateTime(2026, 3, 20),
+            Pattern = RecurrencePattern.Weekly,
+            IntervalWeeks = 1,
+            BusinessDayAdjustment = BusinessDayAdjustment.None,
+            IsActive = true
+        };
+        form.SelectedWeekdays.Clear();
+        form.SelectedWeekdays.Add(Weekday.Friday);
+        ReflectionTestHelper.SetPrivateField(component, "_recurringRuleForm", form);
+
+        await ReflectionTestHelper.InvokeAsync(component, "AddRecurringRuleAsync");
+
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        Assert.Single(updatedPlan.RecurringRules);
+        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "_recurringRuleForm").Name);
+    }
+
+    [Fact]
+    public async Task AddPlannedTransactionAsync_AddsTransactionAndResetsForm()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 125m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var component = CreateComponent(service, plan.PlanId);
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+        ReflectionTestHelper.SetPrivateField(component, "_plannedTransactionForm", new PlannedTransactionFormModel
+        {
+            Name = "Rent",
+            Date = new DateTime(2026, 3, 21),
+            Amount = 40m,
+            Direction = TransactionDirection.Outflow
+        });
+
+        await ReflectionTestHelper.InvokeAsync(component, "AddPlannedTransactionAsync");
+
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        Assert.Single(updatedPlan.PlannedTransactions);
+        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<PlannedTransactionFormModel>(component, "_plannedTransactionForm").Name);
+    }
+
+    [Fact]
+    public async Task AddOverrideAsync_AddsOverrideAndResetsForm()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 125m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var updatedPlan = await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 40m),
+            CancellationToken.None);
+        var transactionId = updatedPlan.PlannedTransactions.Single().TransactionId;
+        var component = CreateComponent(service, plan.PlanId);
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+        ReflectionTestHelper.SetPrivateField(component, "_overrideForm", new OccurrenceOverrideFormModel
+        {
+            Source = OccurrenceSource.PlannedTransaction,
+            SourceId = transactionId.ToString(),
+            OriginalDate = new DateTime(2026, 3, 21),
+            Action = OverrideAction.ReplaceName,
+            NewName = "Moved rent"
+        });
+
+        await ReflectionTestHelper.InvokeAsync(component, "AddOverrideAsync");
+
+        var latestPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        Assert.Single(latestPlan.Overrides);
+        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<OccurrenceOverrideFormModel>(component, "_overrideForm").SourceId);
+    }
+
+    [Fact]
+    public async Task RunForecastAsync_SetsForecastResult()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 50m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 100m),
+            CancellationToken.None);
+        var component = CreateComponent(service, plan.PlanId);
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+        ReflectionTestHelper.SetPrivateField(component, "_forecastForm", new ForecastFormModel
+        {
+            StartDate = new DateTime(2026, 3, 20),
+            EndDate = new DateTime(2026, 3, 22)
+        });
+
+        await ReflectionTestHelper.InvokeAsync(component, "RunForecastAsync");
+
+        var forecast = ReflectionTestHelper.GetPrivateField<ForecastResult?>(component, "_forecastResult");
+        Assert.NotNull(forecast);
+        Assert.Equal(new DateOnly(2026, 3, 21), forecast.Summary.FirstBelowZeroDate);
+    }
+
+    [Fact]
+    public void HelperMethods_ReturnDisplayFriendlyValues()
+    {
+        var planId = Guid.NewGuid();
+        var recurringRuleId = Guid.NewGuid();
+        var transactionId = Guid.NewGuid();
+        var plan = new BudgetPlan(
+            planId,
+            "Household",
+            "CAD",
+            new Money(100m, "CAD"),
+            new DateOnly(2026, 3, 20),
+            "America/Halifax");
+        plan.AddRecurringRule(new RecurringTransactionRule(
+            recurringRuleId,
+            planId,
+            "Payday",
+            TransactionDirection.Inflow,
+            new Money(1000m, "CAD"),
+            new DateOnly(2026, 3, 20),
+            null,
+            new WeeklyRecurrence(1, new HashSet<Weekday> { Weekday.Friday })));
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            transactionId,
+            planId,
+            new DateOnly(2026, 3, 21),
+            "Rent",
+            TransactionDirection.Outflow,
+            new Money(40m, "CAD")));
+        var component = new PlanDetails();
+        ReflectionTestHelper.SetPrivateField(component, "_plan", plan);
+        ReflectionTestHelper.SetPrivateField(component, "_recurringRuleForm", RecurringRuleFormModel.CreateDefault());
+
+        var recurrenceText = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "DescribeRecurrence", plan.RecurringRules.Single().Recurrence);
+        var windowText = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "DescribeEffectiveWindow", plan.RecurringRules.Single());
+        var overrideText = ReflectionTestHelper.InvokeStatic<string>(
+            typeof(PlanDetails),
+            "DescribeOverride",
+            new OccurrenceOverride(Guid.NewGuid(), planId, OccurrenceSource.PlannedTransaction, transactionId, new DateOnly(2026, 3, 21), OverrideAction.MoveToDate, newDate: new DateOnly(2026, 3, 25)));
+        var sourceOptions = ReflectionTestHelper.InvokeInstance<IReadOnlyList<SourceOption>>(component, "GetSourceOptions", OccurrenceSource.PlannedTransaction);
+        var sourceLabel = ReflectionTestHelper.InvokeInstance<string>(
+            component,
+            "GetOverrideSourceLabel",
+            new OccurrenceOverride(Guid.NewGuid(), planId, OccurrenceSource.RecurringRule, recurringRuleId, new DateOnly(2026, 3, 20), OverrideAction.Skip));
+        var positiveClass = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "GetBalanceClass", 1m);
+        var negativeClass = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "GetBalanceClass", -1m);
+
+        Assert.Equal("Every 1 week(s) on Friday", recurrenceText);
+        Assert.Equal("Mar 20, 2026 onward", windowText);
+        Assert.Equal("Move to Mar 25, 2026", overrideText);
+        Assert.Single(sourceOptions);
+        Assert.Equal("Payday", sourceLabel);
+        Assert.Equal("balance-positive", positiveClass);
+        Assert.Equal("balance-negative", negativeClass);
+    }
+
+    [Fact]
+    public void WeekdayAndMonthSelectionMethods_ToggleChoices()
+    {
+        var component = new PlanDetails();
+        var form = RecurringRuleFormModel.CreateDefault();
+        form.SelectedWeekdays.Clear();
+        form.SelectedMonths.Clear();
+        ReflectionTestHelper.SetPrivateField(component, "_recurringRuleForm", form);
+
+        ReflectionTestHelper.InvokeVoid(component, "SetWeekday", Weekday.Friday, true);
+        ReflectionTestHelper.InvokeVoid(component, "SetMonth", 12, true);
+
+        var updatedForm = ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "_recurringRuleForm");
+        Assert.Contains(Weekday.Friday, updatedForm.SelectedWeekdays);
+        Assert.Contains(12, updatedForm.SelectedMonths);
+    }
+
+    private static PlanDetails CreateComponent(BudgetPlanService service, Guid planId)
+    {
+        var component = new PlanDetails();
+        ReflectionTestHelper.SetProperty(component, nameof(PlanDetails.PlanId), planId);
+        ReflectionTestHelper.SetPrivateProperty(component, "BudgetPlanService", service);
+        ReflectionTestHelper.SetPrivateProperty(component, "Snackbar", Substitute.For<ISnackbar>());
+        return component;
+    }
+}

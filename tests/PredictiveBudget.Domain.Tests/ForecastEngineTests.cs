@@ -1,0 +1,133 @@
+using PredictiveBudget.Domain.BudgetPlans;
+using PredictiveBudget.Domain.BudgetPlans.Recurrence;
+using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Forecasting;
+
+namespace PredictiveBudget.Domain.Tests;
+
+public sealed class ForecastEngineTests
+{
+    [Fact]
+    public void Forecast_ReturnsDailyPointsAndSummaryForStaticBalance()
+    {
+        var plan = CreatePlan();
+        var engine = new ForecastEngine();
+
+        var result = engine.Forecast(plan, new DateRange(new DateOnly(2026, 3, 20), new DateOnly(2026, 3, 22)));
+
+        Assert.Equal(3, result.DailyPoints.Count);
+        Assert.All(result.DailyPoints, point => Assert.Equal(100m, point.EndOfDayBalance.Amount));
+        Assert.Equal(new Money(100m, "CAD"), result.Summary.MinBalance);
+        Assert.Equal(new Money(100m, "CAD"), result.Summary.MaxBalance);
+        Assert.Null(result.Summary.FirstBelowZeroDate);
+    }
+
+    [Fact]
+    public void Forecast_AppliesRecurringTransactionsPlannedTransactionsAndOverrides()
+    {
+        var plan = CreatePlan();
+        var ruleId = Guid.NewGuid();
+        var salaryRule = new RecurringTransactionRule(
+            ruleId,
+            plan.PlanId,
+            "Salary",
+            TransactionDirection.Inflow,
+            new Money(100m, "CAD"),
+            new DateOnly(2026, 3, 20),
+            null,
+            new WeeklyRecurrence(1, new HashSet<Weekday> { Weekday.Friday }));
+        var rentId = Guid.NewGuid();
+        var rent = new PlannedTransaction(
+            rentId,
+            plan.PlanId,
+            new DateOnly(2026, 3, 21),
+            "Rent",
+            TransactionDirection.Outflow,
+            new Money(40m, "CAD"));
+        var movedRentId = Guid.NewGuid();
+        var movedRent = new PlannedTransaction(
+            movedRentId,
+            plan.PlanId,
+            new DateOnly(2026, 3, 22),
+            "Moved rent",
+            TransactionDirection.Outflow,
+            new Money(70m, "CAD"));
+
+        plan.AddRecurringRule(salaryRule);
+        plan.AddPlannedTransaction(rent);
+        plan.AddPlannedTransaction(movedRent);
+        plan.AddOverride(new OccurrenceOverride(
+            Guid.NewGuid(),
+            plan.PlanId,
+            OccurrenceSource.RecurringRule,
+            ruleId,
+            new DateOnly(2026, 3, 27),
+            OverrideAction.Skip));
+        plan.AddOverride(new OccurrenceOverride(
+            Guid.NewGuid(),
+            plan.PlanId,
+            OccurrenceSource.PlannedTransaction,
+            rentId,
+            new DateOnly(2026, 3, 21),
+            OverrideAction.ReplaceAmount,
+            newAmount: new Money(55m, "CAD")));
+        plan.AddOverride(new OccurrenceOverride(
+            Guid.NewGuid(),
+            plan.PlanId,
+            OccurrenceSource.PlannedTransaction,
+            movedRentId,
+            new DateOnly(2026, 3, 22),
+            OverrideAction.MoveToDate,
+            newDate: new DateOnly(2026, 3, 24)));
+        plan.AddOverride(new OccurrenceOverride(
+            Guid.NewGuid(),
+            plan.PlanId,
+            OccurrenceSource.PlannedTransaction,
+            rentId,
+            new DateOnly(2026, 3, 21),
+            OverrideAction.ReplaceName,
+            newName: "Rent adjusted"));
+
+        var engine = new ForecastEngine();
+
+        var result = engine.Forecast(plan, new DateRange(new DateOnly(2026, 3, 20), new DateOnly(2026, 3, 28)));
+
+        Assert.Equal(200m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 20)).EndOfDayBalance.Amount);
+        Assert.Equal(145m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 21)).EndOfDayBalance.Amount);
+        Assert.Equal(145m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 22)).EndOfDayBalance.Amount);
+        Assert.Equal(75m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 24)).EndOfDayBalance.Amount);
+        Assert.Equal(75m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 28)).EndOfDayBalance.Amount);
+        Assert.Equal(new DateOnly(2026, 3, 24), result.Summary.MinDate);
+        Assert.Equal(new Money(200m, "CAD"), result.Summary.MaxBalance);
+        Assert.Null(result.Summary.FirstBelowZeroDate);
+    }
+
+    [Fact]
+    public void Forecast_TracksFirstBelowZeroDate()
+    {
+        var plan = CreatePlan();
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            Guid.NewGuid(),
+            plan.PlanId,
+            new DateOnly(2026, 3, 21),
+            "Large bill",
+            TransactionDirection.Outflow,
+            new Money(150m, "CAD")));
+
+        var engine = new ForecastEngine();
+
+        var result = engine.Forecast(plan, new DateRange(new DateOnly(2026, 3, 20), new DateOnly(2026, 3, 22)));
+
+        Assert.Equal(new DateOnly(2026, 3, 21), result.Summary.FirstBelowZeroDate);
+        Assert.Equal([new DateOnly(2026, 3, 21), new DateOnly(2026, 3, 22)], result.BelowZeroDates);
+    }
+
+    private static BudgetPlan CreatePlan()
+        => new(
+            Guid.NewGuid(),
+            "Household",
+            "CAD",
+            new Money(100m, "CAD"),
+            new DateOnly(2026, 3, 20),
+            "America/Halifax");
+}
