@@ -17,12 +17,12 @@ public sealed class SystemClockAndThemeTests
     public void AppTheme_Theme_ExposesConfiguredPaletteAndTypography()
     {
         var theme = AppTheme.Theme;
-        var fontFamily = theme.Typography!.Default!.FontFamily;
+        var buttonTypography = theme.Typography!.Button!;
 
-        Assert.Equal("#0f766e", theme.PaletteLight!.Primary);
-        Assert.Equal("#e0a82e", theme.PaletteLight.Secondary);
-        Assert.Equal("18px", theme.LayoutProperties!.DefaultBorderRadius);
-        Assert.NotNull(fontFamily);
-        Assert.Contains("Manrope", fontFamily);
+        Assert.Equal("#0d6efd", theme.PaletteDark!.Primary);
+        Assert.Equal("#6c757d", theme.PaletteDark.Secondary);
+        Assert.Equal("6px", theme.LayoutProperties!.DefaultBorderRadius);
+        Assert.Equal("600", buttonTypography.FontWeight);
+        Assert.Equal("none", buttonTypography.TextTransform);
     }
 }

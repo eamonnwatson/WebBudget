@@ -3,6 +3,7 @@ using NSubstitute;
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Forecasting;
 using PredictiveBudget.Web.Components.Pages;
 using PredictiveBudget.Web.Components.Pages.Models;
 using PredictiveBudget.Web.Tests.TestSupport;
@@ -12,33 +13,64 @@ namespace PredictiveBudget.Web.Tests;
 public sealed class HomeTests
 {
     [Fact]
-    public async Task OnInitializedAsync_LoadsPlansIntoComponentState()
+    public async Task OnInitializedAsync_LoadsPlansSelectsTheFirstPlanAndRunsForecast()
     {
         var context = new WebBudgetPlanContext();
         var service = context.CreateService();
         await service.CreateAsync(
             new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
             CancellationToken.None);
-        var component = new Home();
-        ReflectionTestHelper.SetPrivateProperty(component, "BudgetPlanService", service);
+        await service.CreateAsync(
+            new CreateBudgetPlanRequest("Travel", "USD", 200m, new DateOnly(2026, 4, 1), "America/New_York"),
+            CancellationToken.None);
+        var expectedPlan = (await service.ListAsync(CancellationToken.None)).First();
+        var component = CreateComponent(service);
 
         await ReflectionTestHelper.InvokeAsync(component, "OnInitializedAsync");
 
         var plans = ReflectionTestHelper.GetPrivateField<List<BudgetPlan>>(component, "_plans");
-        Assert.Single(plans);
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
+        var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "_forecastForm");
+        var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_forecastResult");
+
+        Assert.Equal(2, plans.Count);
+        Assert.Equal(expectedPlan.PlanId, selectedPlan.PlanId);
+        Assert.Equal(expectedPlan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue), forecastForm.StartDate);
+        Assert.Equal(expectedPlan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue).AddDays(365), forecastForm.EndDate);
+        Assert.Equal(expectedPlan.BalanceAsOfDate, forecastResult.Range.Start);
         Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "_isLoading"));
     }
 
     [Fact]
-    public async Task CreatePlanAsync_CreatesPlanResetsFormAndNavigatesToDetails()
+    public async Task ChangeSelectedPlanAsync_SwitchesPlanAndResetsForecastWindow()
     {
         var context = new WebBudgetPlanContext();
         var service = context.CreateService();
-        var navigation = new TestNavigationManager();
-        var component = new Home();
-        ReflectionTestHelper.SetPrivateProperty(component, "BudgetPlanService", service);
-        ReflectionTestHelper.SetPrivateProperty(component, "Navigation", navigation);
-        ReflectionTestHelper.SetPrivateProperty(component, "Snackbar", Substitute.For<ISnackbar>());
+        await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var secondPlan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Travel", "USD", 200m, new DateOnly(2026, 4, 10), "America/New_York"),
+            CancellationToken.None);
+        var component = CreateComponent(service);
+        await ReflectionTestHelper.InvokeAsync(component, "OnInitializedAsync");
+
+        await ReflectionTestHelper.InvokeAsync(component, "ChangeSelectedPlanAsync", secondPlan.PlanId);
+
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
+        var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "_forecastForm");
+
+        Assert.Equal(secondPlan.PlanId, selectedPlan.PlanId);
+        Assert.Equal(new DateTime(2026, 4, 10), forecastForm.StartDate);
+        Assert.Equal(new DateTime(2027, 4, 10), forecastForm.EndDate);
+    }
+
+    [Fact]
+    public async Task CreatePlanAsync_CreatesPlanResetsFormAndSelectsNewPlan()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var component = CreateComponent(service);
         ReflectionTestHelper.SetPrivateField(component, "_createForm", new CreateBudgetPlanFormModel
         {
             Name = "Trip",
@@ -52,9 +84,13 @@ public sealed class HomeTests
 
         var plans = await service.ListAsync(CancellationToken.None);
         var createdPlan = Assert.Single(plans);
-        Assert.Equal("USD", createdPlan.Currency);
-        Assert.EndsWith($"/plans/{createdPlan.PlanId}", navigation.Uri, StringComparison.Ordinal);
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
+        var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_forecastResult");
         var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_createForm");
+
+        Assert.Equal("USD", createdPlan.Currency);
+        Assert.Equal(createdPlan.PlanId, selectedPlan.PlanId);
+        Assert.Equal(createdPlan.BalanceAsOfDate, forecastResult.Range.Start);
         Assert.Equal("CAD", resetForm.Currency);
         Assert.Equal(string.Empty, resetForm.Name);
     }
@@ -71,5 +107,13 @@ public sealed class HomeTests
         Assert.Equal(
             "Mar 20, 2026",
             ReflectionTestHelper.InvokeStatic<string>(typeof(Home), "FormatDate", new DateOnly(2026, 3, 20)));
+    }
+
+    private static Home CreateComponent(BudgetPlanService service)
+    {
+        var component = new Home();
+        ReflectionTestHelper.SetPrivateProperty(component, "BudgetPlanService", service);
+        ReflectionTestHelper.SetPrivateProperty(component, "Snackbar", Substitute.For<ISnackbar>());
+        return component;
     }
 }
