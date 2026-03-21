@@ -48,4 +48,24 @@ public sealed class RecurringTransactionRule
         => IsActive
            && date >= EffectiveStartDate
            && (EffectiveEndDate is null || date <= EffectiveEndDate.Value);
+
+    public void Update(
+        string name,
+        TransactionDirection direction,
+        Money amount,
+        DateOnly effectiveStartDate,
+        DateOnly? effectiveEndDate,
+        RecurrenceRule recurrence,
+        bool isActive,
+        int? defaultAlertDaysBefore)
+    {
+        Name = name;
+        Direction = direction;
+        Amount = amount;
+        EffectiveStartDate = effectiveStartDate;
+        EffectiveEndDate = effectiveEndDate;
+        Recurrence = recurrence;
+        IsActive = isActive;
+        DefaultAlertDaysBefore = defaultAlertDaysBefore;
+    }
 }

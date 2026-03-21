@@ -57,11 +57,44 @@ public sealed class BudgetPlanService(
             new Money(request.Amount, plan.Currency),
             request.EffectiveStartDate,
             request.EffectiveEndDate,
-            BuildRecurrence(request),
+            BuildRecurrence(
+                request.Pattern,
+                request.IntervalWeeks,
+                request.Weekdays,
+                request.IntervalMonths,
+                request.Months,
+                request.DayOfMonth,
+                request.BusinessDayAdjustment),
             request.IsActive,
             request.DefaultAlertDaysBefore);
 
         plan.AddRecurringRule(rule);
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
+    public async Task<BudgetPlan> UpdateRecurringRuleAsync(Guid planId, Guid ruleId, UpdateRecurringRuleRequest request, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+
+        plan.UpdateRecurringRule(
+            ruleId,
+            NormalizeRequired(request.Name, nameof(request.Name)),
+            request.Direction,
+            new Money(request.Amount, plan.Currency),
+            request.EffectiveStartDate,
+            request.EffectiveEndDate,
+            BuildRecurrence(
+                request.Pattern,
+                request.IntervalWeeks,
+                request.Weekdays,
+                request.IntervalMonths,
+                request.Months,
+                request.DayOfMonth,
+                request.BusinessDayAdjustment),
+            request.IsActive,
+            request.DefaultAlertDaysBefore);
+
         await repository.SaveAsync(plan, ct);
         return plan;
     }
@@ -79,6 +112,21 @@ public sealed class BudgetPlanService(
             new Money(request.Amount, plan.Currency));
 
         plan.AddPlannedTransaction(transaction);
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
+    public async Task<BudgetPlan> UpdatePlannedTransactionAsync(Guid planId, Guid transactionId, UpdatePlannedTransactionRequest request, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+
+        plan.UpdatePlannedTransaction(
+            transactionId,
+            request.Date,
+            NormalizeRequired(request.Name, nameof(request.Name)),
+            request.Direction,
+            new Money(request.Amount, plan.Currency));
+
         await repository.SaveAsync(plan, ct);
         return plan;
     }
@@ -105,6 +153,26 @@ public sealed class BudgetPlanService(
         return plan;
     }
 
+    public async Task<BudgetPlan> UpdateOverrideAsync(Guid planId, Guid overrideId, UpdateOccurrenceOverrideRequest request, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+
+        plan.UpdateOverride(
+            overrideId,
+            request.Source,
+            request.SourceId,
+            request.OriginalDate,
+            request.Action,
+            request.Action == OverrideAction.MoveToDate ? request.NewDate : null,
+            request.Action == OverrideAction.ReplaceAmount && request.NewAmount.HasValue
+                ? new Money(request.NewAmount.Value, plan.Currency)
+                : null,
+            request.Action == OverrideAction.ReplaceName ? NormalizeOptional(request.NewName) : null);
+
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
     public async Task<ForecastResult> ForecastAsync(Guid planId, ForecastRequest request, CancellationToken ct)
     {
         if (request.End < request.Start)
@@ -118,22 +186,29 @@ public sealed class BudgetPlanService(
         => await repository.GetAsync(planId, ct)
            ?? throw new InvalidOperationException($"Budget plan '{planId}' was not found.");
 
-    private static RecurrenceRule BuildRecurrence(AddRecurringRuleRequest request)
-        => request.Pattern switch
+    private static RecurrenceRule BuildRecurrence(
+        RecurrencePattern pattern,
+        int intervalWeeks,
+        IReadOnlyCollection<Weekday> weekdays,
+        int intervalMonths,
+        IReadOnlyCollection<int> months,
+        int dayOfMonth,
+        BusinessDayAdjustment businessDayAdjustment)
+        => pattern switch
         {
             RecurrencePattern.Weekly => new WeeklyRecurrence(
-                Math.Max(1, request.IntervalWeeks),
-                request.Weekdays.Count > 0 ? request.Weekdays.ToHashSet() : throw new InvalidOperationException("Choose at least one weekday."),
-                request.BusinessDayAdjustment),
+                Math.Max(1, intervalWeeks),
+                weekdays.Count > 0 ? weekdays.ToHashSet() : throw new InvalidOperationException("Choose at least one weekday."),
+                businessDayAdjustment),
             RecurrencePattern.MonthlyByDayOfMonth => new MonthlyByDayOfMonthRecurrence(
-                Math.Max(1, request.IntervalMonths),
-                request.DayOfMonth,
-                request.BusinessDayAdjustment),
+                Math.Max(1, intervalMonths),
+                dayOfMonth,
+                businessDayAdjustment),
             RecurrencePattern.YearlyByMonthsAndDay => new YearlyByMonthsAndDayRecurrence(
-                request.Months.Count > 0 ? request.Months.ToHashSet() : throw new InvalidOperationException("Choose at least one month."),
-                request.DayOfMonth,
-                request.BusinessDayAdjustment),
-            _ => throw new ArgumentOutOfRangeException(nameof(request.Pattern))
+                months.Count > 0 ? months.ToHashSet() : throw new InvalidOperationException("Choose at least one month."),
+                dayOfMonth,
+                businessDayAdjustment),
+            _ => throw new ArgumentOutOfRangeException(nameof(pattern))
         };
 
     private static string NormalizeCurrency(string currency)

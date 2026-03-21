@@ -20,4 +20,12 @@ public sealed class PlannedTransaction
         Direction = direction;
         Amount = amount;
     }
+
+    public void Update(DateOnly date, string name, TransactionDirection direction, Money amount)
+    {
+        Date = date;
+        Name = name;
+        Direction = direction;
+        Amount = amount;
+    }
 }

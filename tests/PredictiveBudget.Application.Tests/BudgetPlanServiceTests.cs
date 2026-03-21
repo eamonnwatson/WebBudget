@@ -266,6 +266,65 @@ public sealed class BudgetPlanServiceTests
     }
 
     [Fact]
+    public async Task UpdateRecurringRuleAsync_UpdatesExistingRule()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Salary", "CAD", 0m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var seededPlan = await service.AddRecurringRuleAsync(
+            plan.PlanId,
+            new AddRecurringRuleRequest(
+                "Payday",
+                TransactionDirection.Inflow,
+                2000m,
+                new DateOnly(2026, 3, 20),
+                null,
+                RecurrencePattern.Weekly,
+                1,
+                [Weekday.Friday],
+                1,
+                [],
+                20,
+                BusinessDayAdjustment.None,
+                true,
+                3),
+            CancellationToken.None);
+        var ruleId = Assert.Single(seededPlan.RecurringRules).RuleId;
+
+        var updated = await service.UpdateRecurringRuleAsync(
+            plan.PlanId,
+            ruleId,
+            new UpdateRecurringRuleRequest(
+                "Mortgage",
+                TransactionDirection.Outflow,
+                925m,
+                new DateOnly(2026, 4, 1),
+                new DateOnly(2026, 12, 31),
+                RecurrencePattern.MonthlyByDayOfMonth,
+                1,
+                [],
+                2,
+                [],
+                1,
+                BusinessDayAdjustment.NextBusinessDay,
+                false,
+                null),
+            CancellationToken.None);
+
+        var rule = Assert.Single(updated.RecurringRules);
+        var monthly = Assert.IsType<MonthlyByDayOfMonthRecurrence>(rule.Recurrence);
+        Assert.Equal("Mortgage", rule.Name);
+        Assert.Equal(TransactionDirection.Outflow, rule.Direction);
+        Assert.Equal(925m, rule.Amount.Amount);
+        Assert.Equal(new DateOnly(2026, 4, 1), rule.EffectiveStartDate);
+        Assert.Equal(new DateOnly(2026, 12, 31), rule.EffectiveEndDate);
+        Assert.False(rule.IsActive);
+        Assert.Equal(2, monthly.IntervalMonths);
+    }
+
+    [Fact]
     public async Task AddPlannedTransactionAsync_TrimsNameAndPersistsTransaction()
     {
         var context = new ApplicationTestContext();
@@ -282,6 +341,33 @@ public sealed class BudgetPlanServiceTests
         var transaction = Assert.Single(updated.PlannedTransactions);
         Assert.Equal("Rent", transaction.Name);
         Assert.Equal(100m, transaction.Amount.Amount);
+    }
+
+    [Fact]
+    public async Task UpdatePlannedTransactionAsync_UpdatesExistingTransaction()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Bills", "CAD", 50m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var seededPlan = await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 100m),
+            CancellationToken.None);
+        var transactionId = Assert.Single(seededPlan.PlannedTransactions).TransactionId;
+
+        var updated = await service.UpdatePlannedTransactionAsync(
+            plan.PlanId,
+            transactionId,
+            new UpdatePlannedTransactionRequest(new DateOnly(2026, 3, 25), " Bonus ", TransactionDirection.Inflow, 250m),
+            CancellationToken.None);
+
+        var transaction = Assert.Single(updated.PlannedTransactions);
+        Assert.Equal(new DateOnly(2026, 3, 25), transaction.Date);
+        Assert.Equal("Bonus", transaction.Name);
+        Assert.Equal(TransactionDirection.Inflow, transaction.Direction);
+        Assert.Equal(250m, transaction.Amount.Amount);
     }
 
     [Fact]
@@ -342,6 +428,51 @@ public sealed class BudgetPlanServiceTests
             CancellationToken.None);
 
         Assert.Equal("Rent holiday", Assert.Single(updated.Overrides).NewName);
+    }
+
+    [Fact]
+    public async Task UpdateOverrideAsync_UpdatesExistingOverride()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Bills", "CAD", 50m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var updatedPlan = await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 100m),
+            CancellationToken.None);
+        var sourceId = Assert.Single(updatedPlan.PlannedTransactions).TransactionId;
+        var overriddenPlan = await service.AddOverrideAsync(
+            plan.PlanId,
+            new AddOccurrenceOverrideRequest(
+                OccurrenceSource.PlannedTransaction,
+                sourceId,
+                new DateOnly(2026, 3, 21),
+                OverrideAction.ReplaceAmount,
+                null,
+                25m,
+                null),
+            CancellationToken.None);
+        var overrideId = Assert.Single(overriddenPlan.Overrides).OverrideId;
+
+        var updated = await service.UpdateOverrideAsync(
+            plan.PlanId,
+            overrideId,
+            new UpdateOccurrenceOverrideRequest(
+                OccurrenceSource.PlannedTransaction,
+                sourceId,
+                new DateOnly(2026, 3, 21),
+                OverrideAction.ReplaceName,
+                null,
+                null,
+                "  Deferred rent  "),
+            CancellationToken.None);
+
+        var overrideEntry = Assert.Single(updated.Overrides);
+        Assert.Equal(OverrideAction.ReplaceName, overrideEntry.Action);
+        Assert.Null(overrideEntry.NewAmount);
+        Assert.Equal("Deferred rent", overrideEntry.NewName);
     }
 
     [Fact]
