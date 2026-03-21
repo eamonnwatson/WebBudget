@@ -7,9 +7,9 @@
 
 .hero-panel {
     background:
-        radial-gradient(circle at top right, rgba(224, 168, 46, 0.25), transparent 26%),
-        linear-gradient(135deg, #0f2531 0%, #184b58 62%, #237b87 100%);
-    color: #f5fbfa;
+        radial-gradient(circle at top right, rgba(13, 202, 240, 0.18), transparent 26%),
+        linear-gradient(135deg, #212529 0%, #2b3035 62%, #0d6efd 100%);
+    color: #f8f9fa;
 }
 
 .header-actions {
@@ -17,38 +17,42 @@
 }
 
 .section-kicker {
-    color: rgba(245, 251, 250, 0.72);
+    color: rgba(248, 249, 250, 0.72);
 }
 
 .hero-copy {
     max-width: 48rem;
-    color: rgba(245, 251, 250, 0.86);
+    color: rgba(248, 249, 250, 0.84);
 }
 
 .stat-tile {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f5fbfa;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #f8f9fa;
 }
 
 .panel-card {
     min-height: 100%;
+    background: linear-gradient(180deg, rgba(43, 48, 53, 0.96), rgba(33, 37, 41, 0.96));
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .section-copy {
-    color: rgba(11, 37, 50, 0.68);
+    color: rgba(248, 249, 250, 0.72);
 }
 
 .summary-card,
 .recurrence-panel {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(52, 58, 64, 0.92);
+    border-color: rgba(13, 110, 253, 0.2);
 }
 
 .balance-negative {
-    color: #b44941;
+    color: #dc3545;
     font-weight: 700;
 }
 
 .balance-positive {
-    color: #2d8659;
+    color: #198754;
     font-weight: 700;
 }

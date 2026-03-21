@@ -6,53 +6,35 @@ public static class AppTheme
 {
     public static MudTheme Theme { get; } = new()
     {
-        PaletteLight = new PaletteLight
+        PaletteDark = new PaletteDark
         {
-            Primary = "#0f766e",
-            Secondary = "#e0a82e",
-            Tertiary = "#124b5b",
-            Background = "#eef5f7",
-            Surface = "#ffffff",
-            AppbarBackground = "#0b2532",
-            AppbarText = "#f8fbfb",
-            DrawerBackground = "#0d2535",
-            DrawerText = "#edf8f7",
-            Success = "#2d8659",
-            Warning = "#c88515",
-            Error = "#b44941",
-            Info = "#277da1"
+            Primary = "#0d6efd",
+            Secondary = "#6c757d",
+            Tertiary = "#20c997",
+            Background = "#212529",
+            Surface = "#2b3035",
+            AppbarBackground = "#212529",
+            AppbarText = "#f8f9fa",
+            DrawerBackground = "#1c1f23",
+            DrawerText = "#f8f9fa",
+            Success = "#198754",
+            Warning = "#ffc107",
+            Error = "#dc3545",
+            Info = "#0dcaf0",
+            TextPrimary = "rgba(248, 249, 250, 0.95)",
+            TextSecondary = "rgba(248, 249, 250, 0.72)"
         },
         Typography = new Typography
         {
-            Default = new DefaultTypography
-            {
-                FontFamily = ["Manrope", "Segoe UI", "sans-serif"]
-            },
-            H1 = new H1Typography
-            {
-                FontFamily = ["Manrope", "Segoe UI", "sans-serif"],
-                FontWeight = "800"
-            },
-            H2 = new H2Typography
-            {
-                FontFamily = ["Manrope", "Segoe UI", "sans-serif"],
-                FontWeight = "800"
-            },
-            H3 = new H3Typography
-            {
-                FontFamily = ["Manrope", "Segoe UI", "sans-serif"],
-                FontWeight = "700"
-            },
             Button = new ButtonTypography
             {
-                FontFamily = ["Manrope", "Segoe UI", "sans-serif"],
-                FontWeight = "700",
+                FontWeight = "600",
                 TextTransform = "none"
             }
         },
         LayoutProperties = new LayoutProperties
         {
-            DefaultBorderRadius = "18px"
+            DefaultBorderRadius = "6px"
         }
     };
 }
