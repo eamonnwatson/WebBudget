@@ -59,6 +59,7 @@ dlldata.c
 BenchmarkDotNet.Artifacts/
 
 # .NET Core
+.dotnet/
 project.lock.json
 project.fragment.lock.json
 artifacts/
@@ -362,3 +363,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /Budget.db*
+src/PredictiveBudget.Web/App_Data/
