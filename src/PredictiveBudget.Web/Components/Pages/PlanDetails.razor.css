@@ -1,0 +1,54 @@
+.loading-state {
+    min-height: 18rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-panel {
+    background:
+        radial-gradient(circle at top right, rgba(224, 168, 46, 0.25), transparent 26%),
+        linear-gradient(135deg, #0f2531 0%, #184b58 62%, #237b87 100%);
+    color: #f5fbfa;
+}
+
+.header-actions {
+    gap: 0.75rem;
+}
+
+.section-kicker {
+    color: rgba(245, 251, 250, 0.72);
+}
+
+.hero-copy {
+    max-width: 48rem;
+    color: rgba(245, 251, 250, 0.86);
+}
+
+.stat-tile {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f5fbfa;
+}
+
+.panel-card {
+    min-height: 100%;
+}
+
+.section-copy {
+    color: rgba(11, 37, 50, 0.68);
+}
+
+.summary-card,
+.recurrence-panel {
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.balance-negative {
+    color: #b44941;
+    font-weight: 700;
+}
+
+.balance-positive {
+    color: #2d8659;
+    font-weight: 700;
+}

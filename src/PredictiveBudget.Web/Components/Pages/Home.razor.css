@@ -1,0 +1,41 @@
+.hero-panel {
+    background:
+        radial-gradient(circle at top right, rgba(224, 168, 46, 0.25), transparent 24%),
+        linear-gradient(135deg, #0f2531 0%, #1d5663 70%, #2b8c99 100%);
+    color: #f5fbfa;
+    overflow: hidden;
+}
+
+.section-kicker {
+    color: rgba(245, 251, 250, 0.72);
+}
+
+.hero-copy {
+    max-width: 42rem;
+    color: rgba(245, 251, 250, 0.86);
+}
+
+.stat-tile {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f5fbfa;
+}
+
+.panel-card {
+    min-height: 100%;
+}
+
+.section-copy {
+    color: rgba(11, 37, 50, 0.68);
+}
+
+.loading-state {
+    min-height: 10rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.plan-card {
+    border-color: rgba(18, 75, 91, 0.12);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(247, 251, 252, 0.95));
+}

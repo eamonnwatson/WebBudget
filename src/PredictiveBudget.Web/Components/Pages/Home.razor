@@ -1,0 +1,141 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Budget dashboard</PageTitle>
+
+<MudStack Spacing="4">
+    <MudPaper Class="hero-panel pa-6">
+        <MudGrid>
+            <MudItem xs="12" lg="8">
+                <MudText Typo="Typo.overline" Class="section-kicker">Local forecasting workspace</MudText>
+                <MudText Typo="Typo.h2">Plan your cash flow without leaving your Raspberry Pi.</MudText>
+                <MudText Typo="Typo.body1" Class="hero-copy">
+                    Create plans, load recurring transactions, and inspect forecast ranges from a single MudBlazor web app hosted on your local network.
+                </MudText>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="stat-tile pa-4">
+                    <MudText Typo="Typo.overline">Plans</MudText>
+                    <MudText Typo="Typo.h3">@_plans.Count</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="stat-tile pa-4">
+                    <MudText Typo="Typo.overline">Active Rules</MudText>
+                    <MudText Typo="Typo.h3">@_plans.Sum(plan => plan.RecurringRules.Count(rule => rule.IsActive))</MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudGrid>
+        <MudItem xs="12" lg="5">
+            <MudPaper Class="pa-5 panel-card">
+                <MudText Typo="Typo.h5">Create a new budget plan</MudText>
+                <MudText Typo="Typo.body2" Class="section-copy">
+                    Start with a reconciled balance, then add recurring rules and one-off transactions from the plan workspace.
+                </MudText>
+
+                <EditForm Model="_createForm" OnValidSubmit="CreatePlanAsync" class="mt-4">
+                    <DataAnnotationsValidator />
+
+                    <MudStack Spacing="3">
+                        <MudTextField T="string" Label="Plan name" Variant="Variant.Outlined" @bind-Value="_createForm.Name" />
+                        <MudGrid>
+                            <MudItem xs="12" sm="4">
+                                <MudTextField T="string" Label="Currency" Variant="Variant.Outlined" @bind-Value="_createForm.Currency" />
+                            </MudItem>
+                            <MudItem xs="12" sm="8">
+                                <MudTextField T="string" Label="Time zone" Variant="Variant.Outlined" @bind-Value="_createForm.TimeZoneId" />
+                            </MudItem>
+                        </MudGrid>
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudNumericField T="decimal?" Label="Starting balance" Variant="Variant.Outlined" @bind-Value="_createForm.StartingBalance" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudDatePicker Label="Balance as of" Variant="Variant.Outlined" @bind-Date="_createForm.BalanceAsOfDate" />
+                            </MudItem>
+                        </MudGrid>
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle">
+                            Create plan
+                        </MudButton>
+                    </MudStack>
+                </EditForm>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="7">
+            <MudPaper Class="pa-5 panel-card">
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <div>
+                        <MudText Typo="Typo.h5">Existing plans</MudText>
+                        <MudText Typo="Typo.body2" Class="section-copy">Open a plan to manage rules, overrides, and forecast windows.</MudText>
+                    </div>
+                    <MudSpacer />
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadPlansAsync">
+                        Refresh
+                    </MudButton>
+                </MudStack>
+
+                @if (_isLoading)
+                {
+                    <div class="loading-state">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    </div>
+                }
+                else if (_plans.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mt-4">
+                        No plans yet. Create one to start building your local budget forecast workspace.
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudStack Spacing="3" Class="mt-4">
+                        @foreach (var plan in _plans)
+                        {
+                            <MudPaper Class="plan-card pa-4" Outlined="true">
+                                <MudStack Spacing="2">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                                        <div>
+                                            <MudText Typo="Typo.h6">@plan.Name</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@plan.TimeZoneId</MudText>
+                                        </div>
+                                        <MudSpacer />
+                                        <MudChip T="string" Value="@plan.Currency" Variant="Variant.Outlined" Color="Color.Primary">
+                                            @plan.Currency
+                                        </MudChip>
+                                    </MudStack>
+
+                                    <MudGrid>
+                                        <MudItem xs="12" sm="4">
+                                            <MudText Typo="Typo.caption">Starting balance</MudText>
+                                            <MudText Typo="Typo.body1">@FormatMoney(plan.StartingBalance)</MudText>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="4">
+                                            <MudText Typo="Typo.caption">Recurring rules</MudText>
+                                            <MudText Typo="Typo.body1">@plan.RecurringRules.Count</MudText>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="4">
+                                            <MudText Typo="Typo.caption">Planned transactions</MudText>
+                                            <MudText Typo="Typo.body1">@plan.PlannedTransactions.Count</MudText>
+                                        </MudItem>
+                                    </MudGrid>
+
+                                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.body2">Balance as of @FormatDate(plan.BalanceAsOfDate)</MudText>
+                                        <MudSpacer />
+                                        <MudButton Href="@($"/plans/{plan.PlanId}")" Variant="Variant.Filled" Color="Color.Primary">
+                                            Open workspace
+                                        </MudButton>
+                                    </MudStack>
+                                </MudStack>
+                            </MudPaper>
+                        }
+                    </MudStack>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudStack>
