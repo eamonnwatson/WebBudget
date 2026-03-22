@@ -3,6 +3,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Persistence.Mapping;
 
+/// <summary>
+/// JSON-serializable snapshot of a budget plan aggregate.
+/// </summary>
 internal sealed class BudgetPlanSnapshot
 {
     public Guid PlanId { get; set; }
@@ -16,6 +19,9 @@ internal sealed class BudgetPlanSnapshot
     public List<OccurrenceOverrideSnapshot> Overrides { get; set; } = [];
 }
 
+/// <summary>
+/// JSON shape for a recurring transaction rule.
+/// </summary>
 internal sealed class RecurringRuleSnapshot
 {
     public Guid RuleId { get; set; }
@@ -35,6 +41,9 @@ internal sealed class RecurringRuleSnapshot
     public BusinessDayAdjustment BusinessDayAdjustment { get; set; }
 }
 
+/// <summary>
+/// JSON shape for a manually scheduled transaction.
+/// </summary>
 internal sealed class PlannedTransactionSnapshot
 {
     public Guid TransactionId { get; set; }
@@ -44,6 +53,9 @@ internal sealed class PlannedTransactionSnapshot
     public decimal Amount { get; set; }
 }
 
+/// <summary>
+/// JSON shape for an occurrence override.
+/// </summary>
 internal sealed class OccurrenceOverrideSnapshot
 {
     public Guid OverrideId { get; set; }
@@ -56,6 +68,9 @@ internal sealed class OccurrenceOverrideSnapshot
     public string? NewName { get; set; }
 }
 
+/// <summary>
+/// Serialization-friendly recurrence discriminator.
+/// </summary>
 internal enum RecurrencePatternSnapshot
 {
     Weekly = 1,

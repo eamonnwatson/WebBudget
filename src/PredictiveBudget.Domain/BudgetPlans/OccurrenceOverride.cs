@@ -1,15 +1,18 @@
-﻿using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.BudgetPlans;
 
+/// <summary>
+/// Adjusts a single generated or planned occurrence without changing the source rule itself.
+/// </summary>
 public sealed class OccurrenceOverride
 {
     public Guid OverrideId { get; }
     public Guid PlanId { get; }
 
     public OccurrenceSource Source { get; private set; }
-    public Guid SourceId { get; private set; }              // RuleId or TransactionId
-    public DateOnly OriginalDate { get; private set; }      // The occurrence date being overridden
+    public Guid SourceId { get; private set; }
+    public DateOnly OriginalDate { get; private set; }
 
     public OverrideAction Action { get; private set; }
     public DateOnly? NewDate { get; private set; }

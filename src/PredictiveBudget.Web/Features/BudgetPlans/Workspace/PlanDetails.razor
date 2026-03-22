@@ -1,6 +1,7 @@
 @page "/plans/{PlanId:guid}"
 @rendermode InteractiveServer
 
+@* Provides the full editing workspace for a single budget plan. *@
 <PageTitle>@(_plan?.Name ?? "Budget plan")</PageTitle>
 
 @if (_isLoading)

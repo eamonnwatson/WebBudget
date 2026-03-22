@@ -4,6 +4,9 @@ using PredictiveBudget.Persistence.Documents;
 
 namespace PredictiveBudget.Persistence.Database.Configurations;
 
+/// <summary>
+/// Configures storage constraints for serialized budget plan documents.
+/// </summary>
 internal sealed class BudgetPlanDocumentConfiguration : IEntityTypeConfiguration<BudgetPlanDocument>
 {
     public void Configure(EntityTypeBuilder<BudgetPlanDocument> builder)

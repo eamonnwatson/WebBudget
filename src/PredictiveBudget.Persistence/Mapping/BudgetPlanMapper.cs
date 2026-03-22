@@ -7,6 +7,9 @@ using PredictiveBudget.Persistence.Documents;
 
 namespace PredictiveBudget.Persistence.Mapping;
 
+/// <summary>
+/// Converts between rich domain objects and the serialized persistence snapshot.
+/// </summary>
 internal static class BudgetPlanMapper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

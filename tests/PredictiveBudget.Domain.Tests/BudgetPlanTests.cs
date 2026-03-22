@@ -4,6 +4,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.Tests;
 
+/// <summary>
+/// Covers aggregate behavior and invariants on <see cref="BudgetPlan" />.
+/// </summary>
 public sealed class BudgetPlanTests
 {
     [Fact]

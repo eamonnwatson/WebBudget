@@ -1,7 +1,17 @@
-﻿namespace PredictiveBudget.Domain.Common;
+namespace PredictiveBudget.Domain.Common;
 
-public enum TransactionDirection { Inflow = 1, Outflow = 2 }
+/// <summary>
+/// Describes whether a cashflow increases or decreases the budget balance.
+/// </summary>
+public enum TransactionDirection
+{
+    Inflow = 1,
+    Outflow = 2
+}
 
+/// <summary>
+/// Defines how weekend occurrences should be shifted to business days.
+/// </summary>
 public enum BusinessDayAdjustment
 {
     None = 0,
@@ -9,11 +19,23 @@ public enum BusinessDayAdjustment
     PreviousBusinessDay = 2
 }
 
+/// <summary>
+/// Uses a domain-specific weekday enum so recurrence data stays serialization friendly.
+/// </summary>
 public enum Weekday
 {
-    Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
+    Monday = 1,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday
 }
 
+/// <summary>
+/// Describes how a single occurrence should be altered.
+/// </summary>
 public enum OverrideAction
 {
     Skip = 1,
@@ -22,6 +44,9 @@ public enum OverrideAction
     ReplaceName = 4
 }
 
+/// <summary>
+/// Identifies the origin of a forecasted occurrence.
+/// </summary>
 public enum OccurrenceSource
 {
     RecurringRule = 1,

@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
+/// <summary>
+/// Binds the quick balance reconciliation form on the dashboard and workspace.
+/// </summary>
 public sealed class BalanceUpdateFormModel
 {
     [Required]

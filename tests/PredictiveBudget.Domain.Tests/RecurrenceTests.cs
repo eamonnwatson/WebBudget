@@ -3,6 +3,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.Tests;
 
+/// <summary>
+/// Verifies the recurrence engines that generate dated occurrences.
+/// </summary>
 public sealed class RecurrenceTests
 {
     [Fact]

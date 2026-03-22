@@ -1,7 +1,10 @@
-﻿using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.BudgetPlans;
 
+/// <summary>
+/// Stores a single manually scheduled cashflow item.
+/// </summary>
 public sealed class PlannedTransaction
 {
     public Guid TransactionId { get; }

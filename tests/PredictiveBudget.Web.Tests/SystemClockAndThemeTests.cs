@@ -3,6 +3,9 @@ using PredictiveBudget.Web.Styling;
 
 namespace PredictiveBudget.Web.Tests;
 
+/// <summary>
+/// Covers small UI infrastructure pieces such as the system clock and MudBlazor theme.
+/// </summary>
 public sealed class SystemClockAndThemeTests
 {
     [Fact]

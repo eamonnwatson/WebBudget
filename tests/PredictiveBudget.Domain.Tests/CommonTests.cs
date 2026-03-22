@@ -2,6 +2,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.Tests;
 
+/// <summary>
+/// Verifies small common domain types such as money arithmetic and date ranges.
+/// </summary>
 public sealed class CommonTests
 {
     [Fact]

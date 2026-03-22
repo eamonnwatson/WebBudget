@@ -1,12 +1,16 @@
-﻿using PredictiveBudget.Domain.BudgetPlans;
+using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.Forecasting;
 
+/// <summary>
+/// Expands plan activity into dated occurrences and rolls it into daily balance projections.
+/// </summary>
 public sealed class ForecastEngine : IForecastEngine
 {
     public ForecastResult Forecast(BudgetPlan plan, DateRange range)
     {
+        // Forecasting may need to expand earlier than the visible window so the opening balance is accurate.
         var expansionRange = plan.BalanceAsOfDate < range.Start
             ? new DateRange(plan.BalanceAsOfDate, range.End)
             : range;
@@ -15,7 +19,7 @@ public sealed class ForecastEngine : IForecastEngine
             .Where(occurrence => occurrence.Date >= range.Start && occurrence.Date <= range.End)
             .ToList();
 
-        // Group to daily net amount
+        // Collapse same-day occurrences into a single signed net amount for balance rolling.
         var dailyNet = visibleOccurrences
             .GroupBy(o => o.Date)
             .ToDictionary(
@@ -26,7 +30,7 @@ public sealed class ForecastEngine : IForecastEngine
                     return new Money(acc.Amount + signed.Amount, plan.Currency);
                 }));
 
-        // Roll forward daily end-of-day balance
+        // Walk every day in the requested window so the chart always has contiguous points.
         var points = new List<DailyBalancePoint>();
         var balance = RollForwardToRangeStart(plan, occurrences, range.Start);
 
@@ -80,10 +84,9 @@ public sealed class ForecastEngine : IForecastEngine
     {
         var list = new List<CashflowOccurrence>();
 
-        // Expand recurring rules
+        // Expand recurring rules into concrete dated occurrences before layering in manual transactions.
         foreach (var rule in plan.RecurringRules.Where(r => r.IsActive))
         {
-            // Anchor date: use rule.EffectiveStartDate (or a dedicated AnchorDate property if you prefer)
             var dates = rule.Recurrence.Expand(range.Start, range.End, rule.EffectiveStartDate);
 
             foreach (var d in dates)
@@ -100,7 +103,7 @@ public sealed class ForecastEngine : IForecastEngine
             }
         }
 
-        // Add planned one-offs
+        // Planned transactions are already concrete occurrences, so they only need range filtering.
         foreach (var txn in plan.PlannedTransactions)
         {
             if (txn.Date < range.Start || txn.Date > range.End) continue;
@@ -114,14 +117,13 @@ public sealed class ForecastEngine : IForecastEngine
                 txn.TransactionId));
         }
 
-        // Apply overrides
+        // Overrides are applied last so they can replace the final generated occurrence details.
         return ApplyOverrides(plan, list);
     }
 
     private static IReadOnlyList<CashflowOccurrence> ApplyOverrides(BudgetPlan plan, List<CashflowOccurrence> occurrences)
     {
-        // Simple override logic keyed by (Source, SourceId, OriginalDate)
-        // You can make this faster later with dictionaries.
+        // Match overrides to the generated occurrence they target, then rewrite that single instance.
         foreach (var ov in plan.Overrides)
         {
             var match = occurrences.FirstOrDefault(o =>

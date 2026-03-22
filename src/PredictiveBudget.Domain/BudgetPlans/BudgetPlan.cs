@@ -3,6 +3,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.BudgetPlans;
 
+/// <summary>
+/// Aggregates the balance checkpoint, recurring rules, one-off transactions, and overrides for a plan.
+/// </summary>
 public sealed class BudgetPlan
 {
     public Guid PlanId { get; }
@@ -10,7 +13,7 @@ public sealed class BudgetPlan
     public string Currency { get; }
     public Money StartingBalance { get; private set; }
     public DateOnly BalanceAsOfDate { get; private set; }
-    public string TimeZoneId { get; private set; } // e.g. "America/Moncton"
+    public string TimeZoneId { get; private set; }
 
     private readonly List<RecurringTransactionRule> _recurringRules = new();
     private readonly List<PlannedTransaction> _plannedTransactions = new();
@@ -90,6 +93,7 @@ public sealed class BudgetPlan
             ?? throw new InvalidOperationException($"Recurring rule '{ruleId}' was not found.");
 
         _recurringRules.Remove(rule);
+        // Overrides tied to a deleted source can no longer be applied safely.
         _overrides.RemoveAll(overrideEntry =>
             overrideEntry.Source == OccurrenceSource.RecurringRule &&
             overrideEntry.SourceId == ruleId);
@@ -111,6 +115,7 @@ public sealed class BudgetPlan
             ?? throw new InvalidOperationException($"Planned transaction '{transactionId}' was not found.");
 
         _plannedTransactions.Remove(transaction);
+        // Keep overrides in sync with the remaining source items.
         _overrides.RemoveAll(overrideEntry =>
             overrideEntry.Source == OccurrenceSource.PlannedTransaction &&
             overrideEntry.SourceId == transactionId);

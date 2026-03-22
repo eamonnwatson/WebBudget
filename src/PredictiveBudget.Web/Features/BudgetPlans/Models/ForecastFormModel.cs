@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
+/// <summary>
+/// Stores the currently selected forecast window on the dashboard.
+/// </summary>
 public sealed class ForecastFormModel
 {
     [Required]

@@ -5,6 +5,9 @@ using PredictiveBudget.Domain.Forecasting;
 
 namespace PredictiveBudget.Application.Tests.TestSupport;
 
+/// <summary>
+/// Builds a lightweight in-memory application stack for service tests.
+/// </summary>
 internal sealed class ApplicationTestContext(DateOnly? today = null, IForecastEngine? forecastEngine = null)
 {
     public InMemoryBudgetPlanRepository Repository { get; } = new();
@@ -13,11 +16,17 @@ internal sealed class ApplicationTestContext(DateOnly? today = null, IForecastEn
         => new(Repository, forecastEngine ?? new ForecastEngine(), new FixedClock(today ?? new DateOnly(2026, 3, 20)));
 }
 
+/// <summary>
+/// Freezes "today" so tests can assert deterministic date behavior.
+/// </summary>
 internal sealed class FixedClock(DateOnly today) : IClock
 {
     public DateOnly Today() => today;
 }
 
+/// <summary>
+/// Keeps tests focused on application behavior instead of database concerns.
+/// </summary>
 internal sealed class InMemoryBudgetPlanRepository : IBudgetPlanRepository
 {
     private readonly Dictionary<Guid, BudgetPlan> plans = [];

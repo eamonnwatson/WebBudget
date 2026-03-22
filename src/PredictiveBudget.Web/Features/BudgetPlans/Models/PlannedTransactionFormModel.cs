@@ -3,6 +3,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
+/// <summary>
+/// Binds the modal used to add or edit a one-off planned transaction.
+/// </summary>
 public sealed class PlannedTransactionFormModel
 {
     [Required]

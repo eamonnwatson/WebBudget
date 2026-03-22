@@ -9,6 +9,9 @@ using PredictiveBudget.Persistence.Database;
 
 namespace PredictiveBudget.Web.Tests.TestSupport;
 
+/// <summary>
+/// Builds a lightweight in-memory application stack for web-facing tests.
+/// </summary>
 internal sealed class WebBudgetPlanContext(DateOnly? today = null)
 {
     public InMemoryBudgetPlanRepository Repository { get; } = new();
@@ -17,11 +20,17 @@ internal sealed class WebBudgetPlanContext(DateOnly? today = null)
         => new(Repository, new ForecastEngine(), new FixedClock(today ?? new DateOnly(2026, 3, 20)));
 }
 
+/// <summary>
+/// Freezes "today" so component tests can assert deterministic date behavior.
+/// </summary>
 internal sealed class FixedClock(DateOnly today) : IClock
 {
     public DateOnly Today() => today;
 }
 
+/// <summary>
+/// Keeps component tests fast by avoiding the real SQLite repository.
+/// </summary>
 internal sealed class InMemoryBudgetPlanRepository : IBudgetPlanRepository
 {
     private readonly Dictionary<Guid, BudgetPlan> plans = [];
@@ -45,6 +54,9 @@ internal sealed class InMemoryBudgetPlanRepository : IBudgetPlanRepository
     }
 }
 
+/// <summary>
+/// Minimal navigation manager used by component tests.
+/// </summary>
 internal sealed class TestNavigationManager : NavigationManager
 {
     public TestNavigationManager()
@@ -63,6 +75,9 @@ internal sealed class TestNavigationManager : NavigationManager
     }
 }
 
+/// <summary>
+/// Creates EF contexts against the test database options supplied by each test.
+/// </summary>
 internal sealed class TestDbContextFactory(DbContextOptions<BudgetDbContext> options) : IDbContextFactory<BudgetDbContext>
 {
     public BudgetDbContext CreateDbContext() => new(options);
@@ -71,6 +86,9 @@ internal sealed class TestDbContextFactory(DbContextOptions<BudgetDbContext> opt
         => Task.FromResult(CreateDbContext());
 }
 
+/// <summary>
+/// Reaches into private component members so tests can verify stateful behaviors without a renderer harness.
+/// </summary>
 internal static class ReflectionTestHelper
 {
     public static async Task InvokeAsync(object target, string methodName, params object?[]? parameters)
@@ -88,14 +106,16 @@ internal static class ReflectionTestHelper
     {
         var method = targetType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"Method '{methodName}' was not found.");
-        return (T)(method.Invoke(null, parameters) ?? throw new InvalidOperationException($"Method '{methodName}' returned null."));
+        var result = method.Invoke(null, parameters);
+        return result is null ? default! : (T)result;
     }
 
     public static T InvokeInstance<T>(object target, string methodName, params object?[]? parameters)
     {
         var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"Method '{methodName}' was not found.");
-        return (T)(method.Invoke(target, parameters) ?? throw new InvalidOperationException($"Method '{methodName}' returned null."));
+        var result = method.Invoke(target, parameters);
+        return result is null ? default! : (T)result;
     }
 
     public static void SetPrivateProperty(object target, string propertyName, object? value)

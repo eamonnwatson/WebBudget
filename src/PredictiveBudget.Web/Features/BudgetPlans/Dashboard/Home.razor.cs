@@ -8,6 +8,9 @@ using PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Dashboard;
 
+/// <summary>
+/// Backs the dashboard experience for selecting plans, running forecasts, and managing quick actions.
+/// </summary>
 public partial class Home : ComponentBase
 {
     [Inject] private BudgetPlanService BudgetPlanService { get; set; } = default!;
@@ -75,6 +78,7 @@ public partial class Home : ComponentBase
             _selectedPlanId = resolvedPlan.PlanId;
             _balanceForm = BalanceUpdateFormModel.CreateDefault(resolvedPlan.StartingBalance.Amount, resolvedPlan.BalanceAsOfDate);
 
+            // Reset the forecast window when the selected plan changes so stale dates do not carry across plans.
             if (resetForecastWindow || selectionChanged || _forecastForm.StartDate is null || _forecastForm.EndDate is null)
             {
                 ResetForecastWindow(resolvedPlan);
@@ -227,6 +231,7 @@ public partial class Home : ComponentBase
             return [];
         }
 
+        // Pair each occurrence with the balance after that occurrence so the table can show a running total.
         var runningBalances = BuildRunningBalances(plan, occurrences);
 
         return occurrences
@@ -276,6 +281,7 @@ public partial class Home : ComponentBase
             return;
         }
 
+        // Rebuild the entire chart model together so labels, series, and currency formatting stay in sync.
         _forecastChartSeries = BuildForecastChartSeries(_selectedPlan.Name, _forecastResult.DailyPoints);
         _forecastChartLabels = BuildForecastChartLabels(_forecastResult.DailyPoints);
         _forecastChartOptions = CreateDefaultForecastChartOptions(_selectedPlan.Currency);

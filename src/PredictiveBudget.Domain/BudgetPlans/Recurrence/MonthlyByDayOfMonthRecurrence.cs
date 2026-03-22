@@ -1,7 +1,10 @@
-﻿using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.BudgetPlans.Recurrence;
 
+/// <summary>
+/// Expands a rule that repeats every N months on a specific day of the month.
+/// </summary>
 public sealed record MonthlyByDayOfMonthRecurrence(
     int IntervalMonths,
     int DayOfMonth,
@@ -13,7 +16,7 @@ public sealed record MonthlyByDayOfMonthRecurrence(
         if (IntervalMonths <= 0) throw new InvalidOperationException("IntervalMonths must be >= 1.");
         if (DayOfMonth is < 1 or > 31) throw new InvalidOperationException("DayOfMonth must be 1..31.");
 
-        // Start from the month containing 'from'
+        // Start from the first day of the visible month so monthly cycling stays consistent.
         var cursor = new DateOnly(from.Year, from.Month, 1);
 
         while (cursor <= to)
@@ -38,7 +41,8 @@ public sealed record MonthlyByDayOfMonthRecurrence(
     private static DateOnly SafeDay(int year, int month, int day)
     {
         var last = DateTime.DaysInMonth(year, month);
-        var actual = Math.Min(day, last); // if rule is 31st, clamp to 30/28/29
+        // Clamp long months into shorter ones so "31st" style rules still produce an occurrence.
+        var actual = Math.Min(day, last);
         return new DateOnly(year, month, actual);
     }
 }

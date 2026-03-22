@@ -4,6 +4,9 @@ using PredictiveBudget.Persistence.Documents;
 
 namespace PredictiveBudget.Persistence.Database;
 
+/// <summary>
+/// EF Core context that stores serialized budget plan documents in SQLite.
+/// </summary>
 public sealed class BudgetDbContext(DbContextOptions<BudgetDbContext> options) : DbContext(options)
 {
     public DbSet<BudgetPlanDocument> BudgetPlans => Set<BudgetPlanDocument>();

@@ -7,6 +7,9 @@ using PredictiveBudget.Web.Services;
 
 namespace PredictiveBudget.Web.Configuration;
 
+/// <summary>
+/// Registers the web app's UI, services, and persistence dependencies.
+/// </summary>
 internal static class PredictiveBudgetWebBuilderExtensions
 {
     public static WebApplicationBuilder AddPredictiveBudgetWeb(this WebApplicationBuilder builder)

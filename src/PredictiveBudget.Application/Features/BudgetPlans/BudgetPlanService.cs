@@ -6,6 +6,9 @@ using PredictiveBudget.Domain.Forecasting;
 
 namespace PredictiveBudget.Application.Features.BudgetPlans;
 
+/// <summary>
+/// Coordinates budget-plan workflows and keeps UI-facing operations thin.
+/// </summary>
 public sealed class BudgetPlanService(
     IBudgetPlanRepository repository,
     IForecastEngine forecastEngine,
@@ -224,6 +227,7 @@ public sealed class BudgetPlanService(
         IReadOnlyCollection<int> months,
         int dayOfMonth,
         BusinessDayAdjustment businessDayAdjustment)
+        // Translate UI-friendly request data into concrete domain recurrence objects.
         => pattern switch
         {
             RecurrencePattern.Weekly => new WeeklyRecurrence(
@@ -243,6 +247,7 @@ public sealed class BudgetPlanService(
 
     private static string NormalizeCurrency(string currency)
     {
+        // Keep currency codes predictable before they reach the domain model or persistence layer.
         var value = NormalizeRequired(currency, nameof(currency)).ToUpperInvariant();
         if (value.Length > 12)
             throw new InvalidOperationException("Currency code must be 12 characters or fewer.");

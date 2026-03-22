@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
+/// <summary>
+/// Binds the modal used to create a new budget plan.
+/// </summary>
 public sealed class CreateBudgetPlanFormModel
 {
     [Required]

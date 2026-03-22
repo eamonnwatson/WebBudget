@@ -1,8 +1,11 @@
-﻿using PredictiveBudget.Domain.BudgetPlans.Recurrence;
+using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.BudgetPlans;
 
+/// <summary>
+/// Defines a reusable transaction pattern that expands into forecast occurrences.
+/// </summary>
 public sealed class RecurringTransactionRule
 {
     public Guid RuleId { get; }
@@ -12,12 +15,14 @@ public sealed class RecurringTransactionRule
     public Money Amount { get; private set; }
 
     public DateOnly EffectiveStartDate { get; private set; }
-    public DateOnly? EffectiveEndDate { get; private set; } // null means ongoing
+    public DateOnly? EffectiveEndDate { get; private set; }
     public bool IsActive { get; private set; }
 
     public RecurrenceRule Recurrence { get; private set; }
 
-    // Optional: calendar alarm preferences
+    /// <summary>
+    /// Stores the default reminder lead time when external calendar syncing is added.
+    /// </summary>
     public int? DefaultAlertDaysBefore { get; private set; }
 
     public RecurringTransactionRule(

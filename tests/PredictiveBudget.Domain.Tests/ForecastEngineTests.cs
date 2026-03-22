@@ -5,6 +5,9 @@ using PredictiveBudget.Domain.Forecasting;
 
 namespace PredictiveBudget.Domain.Tests;
 
+/// <summary>
+/// Exercises the forecast engine's expansion and balance-rolling behavior.
+/// </summary>
 public sealed class ForecastEngineTests
 {
     [Fact]

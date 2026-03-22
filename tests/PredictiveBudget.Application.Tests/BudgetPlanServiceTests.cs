@@ -6,6 +6,9 @@ using PredictiveBudget.Domain.Forecasting;
 
 namespace PredictiveBudget.Application.Tests;
 
+/// <summary>
+/// Verifies the main application workflows exposed by <see cref="BudgetPlanService" />.
+/// </summary>
 public sealed class BudgetPlanServiceTests
 {
     [Fact]

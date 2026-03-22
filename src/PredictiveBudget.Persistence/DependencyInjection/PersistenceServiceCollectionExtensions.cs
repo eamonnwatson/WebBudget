@@ -6,6 +6,9 @@ using PredictiveBudget.Persistence.Repositories;
 
 namespace PredictiveBudget.Persistence.DependencyInjection;
 
+/// <summary>
+/// Registers SQLite persistence services for the application.
+/// </summary>
 public static class PersistenceServiceCollectionExtensions
 {
     public static IServiceCollection AddPredictiveBudgetPersistence(this IServiceCollection services, string connectionString)

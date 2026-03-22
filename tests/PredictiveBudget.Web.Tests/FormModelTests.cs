@@ -4,6 +4,9 @@ using PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 namespace PredictiveBudget.Web.Tests;
 
+/// <summary>
+/// Covers default values and validation-oriented helpers for the UI form models.
+/// </summary>
 public sealed class FormModelTests
 {
     [Fact]

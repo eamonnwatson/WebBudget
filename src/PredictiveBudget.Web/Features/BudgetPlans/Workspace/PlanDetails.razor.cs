@@ -9,6 +9,9 @@ using PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Workspace;
 
+/// <summary>
+/// Drives the detailed plan workspace, including rule, transaction, and override management.
+/// </summary>
 public partial class PlanDetails : ComponentBase
 {
     [Inject] private BudgetPlanService BudgetPlanService { get; set; } = default!;
@@ -70,6 +73,7 @@ public partial class PlanDetails : ComponentBase
 
             if (_plan is not null)
             {
+                // Keep the quick balance editor aligned with the latest persisted checkpoint.
                 _balanceForm = BalanceUpdateFormModel.CreateDefault(_plan.StartingBalance.Amount, _plan.BalanceAsOfDate);
             }
         }
@@ -128,6 +132,7 @@ public partial class PlanDetails : ComponentBase
 
         BudgetPlan updatedPlan;
 
+        // The same modal supports both create and edit flows, so branch on the tracked edit id.
         if (_editingRecurringRuleId.HasValue)
         {
             updatedPlan = await BudgetPlanService.UpdateRecurringRuleAsync(
@@ -230,6 +235,7 @@ public partial class PlanDetails : ComponentBase
 
         BudgetPlan updatedPlan;
 
+        // Reuse the same form model for add and edit to keep the modal workflow consistent.
         if (_editingPlannedTransactionId.HasValue)
         {
             updatedPlan = await BudgetPlanService.UpdatePlannedTransactionAsync(
@@ -328,6 +334,7 @@ public partial class PlanDetails : ComponentBase
 
         BudgetPlan updatedPlan;
 
+        // Overrides follow the same shared create/edit pattern as the other workspace modals.
         if (_editingOverrideId.HasValue)
         {
             updatedPlan = await BudgetPlanService.UpdateOverrideAsync(
@@ -654,6 +661,7 @@ public partial class PlanDetails : ComponentBase
             return;
         }
 
+        // Default to the first valid source whenever the source type changes or the previous choice disappears.
         if (options.All(option => option.Id != _overrideForm.SourceId))
         {
             _overrideForm.SourceId = options[0].Id;

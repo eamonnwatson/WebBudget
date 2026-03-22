@@ -7,6 +7,9 @@ using PredictiveBudget.Persistence.Mapping;
 
 namespace PredictiveBudget.Persistence.Repositories;
 
+/// <summary>
+/// Stores and retrieves serialized budget plans from SQLite through EF Core.
+/// </summary>
 public sealed class SqliteBudgetPlanRepository(IDbContextFactory<BudgetDbContext> dbContextFactory) : IBudgetPlanRepository
 {
     public async Task<IReadOnlyList<BudgetPlan>> ListAsync(CancellationToken ct)

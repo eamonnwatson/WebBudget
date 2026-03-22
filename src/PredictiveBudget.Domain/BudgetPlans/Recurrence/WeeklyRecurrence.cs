@@ -1,7 +1,10 @@
-﻿using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.BudgetPlans.Recurrence;
 
+/// <summary>
+/// Expands a rule that repeats on one or more weekdays every N weeks.
+/// </summary>
 public sealed record WeeklyRecurrence(
     int IntervalWeeks,
     IReadOnlySet<Weekday> Weekdays,
@@ -10,12 +13,11 @@ public sealed record WeeklyRecurrence(
 {
     public override IEnumerable<DateOnly> Expand(DateOnly from, DateOnly to, DateOnly anchor)
     {
-        // Anchor should be a valid occurrence date for the pattern
-        // For biweekly Friday: anchor = a real Friday payday
+        // The anchor establishes which weeks are "on cycle" for patterns like every other Friday.
         if (IntervalWeeks <= 0) throw new InvalidOperationException("IntervalWeeks must be >= 1.");
         if (Weekdays.Count == 0) yield break;
 
-        // Find the first date >= from that is on a valid cycle relative to anchor
+        // Walk the visible range day by day so multiple weekdays can be emitted within the same week.
         var d = from;
 
         while (d <= to)
@@ -29,8 +31,7 @@ public sealed record WeeklyRecurrence(
 
     private static bool IsOnIntervalCycle(DateOnly date, DateOnly anchor, int intervalWeeks)
     {
-        // Compare whole weeks between anchor and date
-        // We treat cycles based on anchor week; simple + reliable for payday use
+        // Compare whole weeks from the anchor instead of counting matching weekdays only.
         var days = date.DayNumber - anchor.DayNumber;
         var weeks = Math.DivRem(days, 7, out _);
         return weeks % intervalWeeks == 0;

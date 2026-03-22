@@ -5,6 +5,9 @@ using PredictiveBudget.Persistence.Mapping;
 
 namespace PredictiveBudget.Web.Tests;
 
+/// <summary>
+/// Verifies round-tripping between persistence snapshots and domain aggregates.
+/// </summary>
 public sealed class BudgetPlanMapperTests
 {
     [Fact]

@@ -1,9 +1,12 @@
-﻿using PredictiveBudget.Domain.Common;
+using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Domain.BudgetPlans.Recurrence;
 
+/// <summary>
+/// Expands a rule that repeats yearly on selected months and a target day-of-month.
+/// </summary>
 public sealed record YearlyByMonthsAndDayRecurrence(
-    IReadOnlySet<int> Months, // e.g. { 2, 9 }
+    IReadOnlySet<int> Months,
     int DayOfMonth,
     BusinessDayAdjustment BusinessDayAdjustment = BusinessDayAdjustment.None)
     : RecurrenceRule(BusinessDayAdjustment)

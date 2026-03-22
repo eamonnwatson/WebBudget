@@ -5,6 +5,9 @@ using PredictiveBudget.Persistence.Documents;
 
 namespace PredictiveBudget.Web.Tests;
 
+/// <summary>
+/// Confirms the EF Core budget context is configured as expected.
+/// </summary>
 public sealed class BudgetDbContextTests
 {
     [Fact]

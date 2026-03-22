@@ -10,6 +10,9 @@ using PredictiveBudget.Web.Tests.TestSupport;
 
 namespace PredictiveBudget.Web.Tests;
 
+/// <summary>
+/// Exercises the dashboard component's loading, forecasting, and quick-action behavior.
+/// </summary>
 public sealed class HomeTests
 {
     [Fact]

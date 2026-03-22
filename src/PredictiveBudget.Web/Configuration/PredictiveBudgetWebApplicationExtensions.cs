@@ -3,6 +3,9 @@ using PredictiveBudget.Web.Components;
 
 namespace PredictiveBudget.Web.Configuration;
 
+/// <summary>
+/// Applies the middleware and endpoint setup for the web application.
+/// </summary>
 internal static class PredictiveBudgetWebApplicationExtensions
 {
     public static async Task ConfigurePredictiveBudgetWebAsync(this WebApplication app)

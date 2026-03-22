@@ -1,5 +1,8 @@
-﻿namespace PredictiveBudget.Domain.Common;
+namespace PredictiveBudget.Domain.Common;
 
+/// <summary>
+/// Represents a currency amount and protects arithmetic from cross-currency mixing.
+/// </summary>
 public readonly record struct Money(decimal Amount, string Currency)
 {
     public static Money operator +(Money a, Money b)

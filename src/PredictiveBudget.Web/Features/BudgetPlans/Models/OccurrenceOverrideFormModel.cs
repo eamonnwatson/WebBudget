@@ -3,6 +3,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
+/// <summary>
+/// Binds the form used to skip or customize a single occurrence.
+/// </summary>
 public sealed class OccurrenceOverrideFormModel
 {
     public OccurrenceSource Source { get; set; } = OccurrenceSource.RecurringRule;

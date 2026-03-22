@@ -10,6 +10,9 @@ using PredictiveBudget.Web.Tests.TestSupport;
 
 namespace PredictiveBudget.Web.Tests;
 
+/// <summary>
+/// Verifies the detailed workspace component for editing rules, transactions, and overrides.
+/// </summary>
 public sealed class PlanDetailsTests
 {
     [Fact]

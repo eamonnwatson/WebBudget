@@ -9,6 +9,9 @@ using PredictiveBudget.Web.Tests.TestSupport;
 
 namespace PredictiveBudget.Web.Tests;
 
+/// <summary>
+/// Confirms the SQLite repository persists and reloads budget plans correctly.
+/// </summary>
 public sealed class SqliteBudgetPlanRepositoryTests
 {
     [Fact]

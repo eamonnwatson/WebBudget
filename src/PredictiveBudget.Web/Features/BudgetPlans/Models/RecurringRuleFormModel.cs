@@ -4,6 +4,9 @@ using PredictiveBudget.Domain.Common;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
+/// <summary>
+/// Binds the modal used to create or edit recurring transaction rules.
+/// </summary>
 public sealed class RecurringRuleFormModel
 {
     [Required]
