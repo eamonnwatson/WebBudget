@@ -4,9 +4,9 @@ using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.Common;
 using PredictiveBudget.Domain.Forecasting;
-using PredictiveBudget.Web.Components.Pages.Models;
+using PredictiveBudget.Web.Features.BudgetPlans.Models;
 
-namespace PredictiveBudget.Web.Components.Pages;
+namespace PredictiveBudget.Web.Features.BudgetPlans.Dashboard;
 
 public partial class Home : ComponentBase
 {
@@ -26,12 +26,18 @@ public partial class Home : ComponentBase
     private Guid? _selectedPlanId;
     private bool _isLoading = true;
     private bool _showCreatePlanModal;
+    private bool _showDeletePlanModal;
+    private Guid? _deletePlanId;
+    private string _deletePlanName = string.Empty;
 
     protected override async Task OnInitializedAsync()
         => await LoadPlansAsync(resetForecastWindow: true);
 
     private IReadOnlyList<CashflowOccurrence> UpcomingForecastOccurrences
         => _forecastResult?.Occurrences ?? [];
+
+    private IReadOnlyList<ForecastOccurrenceRow> UpcomingForecastRows
+        => BuildOccurrenceRows(_selectedPlan, UpcomingForecastOccurrences);
 
     private async Task LoadPlansAsync(Guid? preferredPlanId = null, bool resetForecastWindow = false)
     {
@@ -106,6 +112,40 @@ public partial class Home : ComponentBase
         await LoadPlansAsync(plan.PlanId, resetForecastWindow: true);
     }
 
+    private void OpenDeletePlanModal()
+    {
+        if (_selectedPlan is null)
+        {
+            return;
+        }
+
+        CloseAllModals();
+        _deletePlanId = _selectedPlan.PlanId;
+        _deletePlanName = _selectedPlan.Name;
+        _showDeletePlanModal = true;
+    }
+
+    private async Task DeletePlanAsync()
+    {
+        if (!_deletePlanId.HasValue)
+        {
+            return;
+        }
+
+        var deletedPlanId = _deletePlanId.Value;
+        var deletedPlanName = _deletePlanName;
+
+        await BudgetPlanService.DeleteAsync(deletedPlanId, CancellationToken.None);
+
+        CloseAllModals();
+        Snackbar.Add($"Deleted plan '{deletedPlanName}'.", Severity.Success);
+
+        bool deletedSelectedPlan = _selectedPlanId == deletedPlanId;
+        await LoadPlansAsync(
+            preferredPlanId: deletedSelectedPlan ? null : _selectedPlanId,
+            resetForecastWindow: deletedSelectedPlan);
+    }
+
     private async Task SaveBalanceAsync()
     {
         if (_selectedPlan is null)
@@ -177,8 +217,50 @@ public partial class Home : ComponentBase
     private static string GetAmountClass(TransactionDirection direction)
         => direction == TransactionDirection.Outflow ? "amount-negative" : "amount-positive";
 
+    private static IReadOnlyList<ForecastOccurrenceRow> BuildOccurrenceRows(BudgetPlan? plan, IReadOnlyList<CashflowOccurrence> occurrences)
+    {
+        if (plan is null || occurrences.Count == 0)
+        {
+            return [];
+        }
+
+        var runningBalances = BuildRunningBalances(plan, occurrences);
+
+        return occurrences
+            .Zip(runningBalances, static (occurrence, runningBalance) => new ForecastOccurrenceRow(occurrence, runningBalance))
+            .ToList();
+    }
+
+    private static IReadOnlyList<Money> BuildRunningBalances(BudgetPlan? plan, IReadOnlyList<CashflowOccurrence> occurrences)
+    {
+        if (plan is null || occurrences.Count == 0)
+        {
+            return [];
+        }
+
+        var runningBalances = new List<Money>(occurrences.Count);
+        var balance = plan.StartingBalance;
+
+        foreach (var occurrence in occurrences)
+        {
+            var delta = occurrence.Direction == TransactionDirection.Inflow
+                ? occurrence.Amount
+                : new Money(-occurrence.Amount.Amount, occurrence.Amount.Currency);
+
+            balance += delta;
+            runningBalances.Add(balance);
+        }
+
+        return runningBalances;
+    }
+
     private void CloseAllModals()
-        => _showCreatePlanModal = false;
+    {
+        _showCreatePlanModal = false;
+        _showDeletePlanModal = false;
+        _deletePlanId = null;
+        _deletePlanName = string.Empty;
+    }
 
     private void ResetForecastWindow(BudgetPlan plan)
         => _forecastForm = ForecastFormModel.CreateDefault(plan.BalanceAsOfDate, durationDays: 365);
@@ -248,4 +330,6 @@ public partial class Home : ComponentBase
 
     private static string FormatChartAxisValue(double value, string currency)
         => $"{value:N0} {currency}";
+
+    private sealed record ForecastOccurrenceRow(CashflowOccurrence Occurrence, Money RunningBalance);
 }

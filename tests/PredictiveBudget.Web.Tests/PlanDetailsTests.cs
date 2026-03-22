@@ -4,8 +4,8 @@ using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
-using PredictiveBudget.Web.Components.Pages;
-using PredictiveBudget.Web.Components.Pages.Models;
+using PredictiveBudget.Web.Features.BudgetPlans.Models;
+using PredictiveBudget.Web.Features.BudgetPlans.Workspace;
 using PredictiveBudget.Web.Tests.TestSupport;
 
 namespace PredictiveBudget.Web.Tests;

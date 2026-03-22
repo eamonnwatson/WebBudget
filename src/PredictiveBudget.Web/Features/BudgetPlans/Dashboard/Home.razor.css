@@ -91,6 +91,11 @@
     font-weight: 600;
 }
 
+.transaction-running-balance {
+    color: rgba(248, 249, 250, 0.72);
+    font-weight: 500;
+}
+
 .modal-backdrop {
     position: fixed;
     inset: 0;

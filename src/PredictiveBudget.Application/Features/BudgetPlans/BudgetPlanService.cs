@@ -45,6 +45,12 @@ public sealed class BudgetPlanService(
         return plan;
     }
 
+    public async Task DeleteAsync(Guid planId, CancellationToken ct)
+    {
+        _ = await RequirePlanAsync(planId, ct);
+        await repository.DeleteAsync(planId, ct);
+    }
+
     public async Task<BudgetPlan> AddRecurringRuleAsync(Guid planId, AddRecurringRuleRequest request, CancellationToken ct)
     {
         var plan = await RequirePlanAsync(planId, ct);

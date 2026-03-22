@@ -5,9 +5,9 @@ using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
-using PredictiveBudget.Web.Components.Pages.Models;
+using PredictiveBudget.Web.Features.BudgetPlans.Models;
 
-namespace PredictiveBudget.Web.Components.Pages;
+namespace PredictiveBudget.Web.Features.BudgetPlans.Workspace;
 
 public partial class PlanDetails : ComponentBase
 {

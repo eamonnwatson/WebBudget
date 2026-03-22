@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using PredictiveBudget.Domain.Common;
 
-namespace PredictiveBudget.Web.Components.Pages.Models;
+namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 public sealed class OccurrenceOverrideFormModel
 {

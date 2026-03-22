@@ -61,4 +61,20 @@ public sealed class SqliteBudgetPlanRepository : IBudgetPlanRepository
 
         await dbContext.SaveChangesAsync(ct);
     }
+
+    public async Task DeleteAsync(Guid planId, CancellationToken ct)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+
+        var existing = await dbContext.BudgetPlans
+            .SingleOrDefaultAsync(document => document.PlanId == planId, ct);
+
+        if (existing is null)
+        {
+            return;
+        }
+
+        dbContext.BudgetPlans.Remove(existing);
+        await dbContext.SaveChangesAsync(ct);
+    }
 }

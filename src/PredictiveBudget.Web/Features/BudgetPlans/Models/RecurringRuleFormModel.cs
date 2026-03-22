@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.Common;
 
-namespace PredictiveBudget.Web.Components.Pages.Models;
+namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 public sealed class RecurringRuleFormModel
 {

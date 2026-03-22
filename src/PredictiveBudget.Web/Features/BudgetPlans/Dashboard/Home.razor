@@ -42,6 +42,13 @@
                            OnClick="@(() => LoadPlansAsync(_selectedPlan.PlanId, false))">
                     Refresh
                 </MudButton>
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Delete"
+                           OnClick="OpenDeletePlanModal">
+                    Delete
+                </MudButton>
             }
 
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="OpenCreatePlanModal">
@@ -175,19 +182,27 @@
                             }
                             else
                             {
-                                <MudTable Items="UpcomingForecastOccurrences" Dense="true" Hover="true" RowsPerPage="25">
+                                <MudTable Items="UpcomingForecastRows" Dense="true" Hover="true" RowsPerPage="25">
                                     <HeaderContent>
                                         <MudTh>Date</MudTh>
                                         <MudTh>Name</MudTh>
                                         <MudTh>Source</MudTh>
-                                        <MudTh>Amount</MudTh>
+                                        <MudTh Style="text-align:right;">Amount</MudTh>
+                                        <MudTh Style="text-align:right;">Balance</MudTh>
                                     </HeaderContent>
                                     <RowTemplate>
-                                        <MudTd DataLabel="Date">@FormatDate(context.Date)</MudTd>
-                                        <MudTd DataLabel="Name">@context.Name</MudTd>
-                                        <MudTd DataLabel="Source">@GetOccurrenceSourceLabel(context)</MudTd>
-                                        <MudTd DataLabel="Amount" Class="@GetAmountClass(context.Direction)">
-                                            @FormatSignedMoney(context.Direction, context.Amount)
+                                        <MudTd DataLabel="Date">@FormatDate(context.Occurrence.Date)</MudTd>
+                                        <MudTd DataLabel="Name">@context.Occurrence.Name</MudTd>
+                                        <MudTd DataLabel="Source">@GetOccurrenceSourceLabel(context.Occurrence)</MudTd>
+                                        <MudTd DataLabel="Amount"
+                                               Class="@GetAmountClass(context.Occurrence.Direction)"
+                                               Style="text-align:right;">
+                                            @FormatSignedMoney(context.Occurrence.Direction, context.Occurrence.Amount)
+                                        </MudTd>
+                                        <MudTd DataLabel="Balance"
+                                               Class="transaction-running-balance"
+                                               Style="text-align:right;">
+                                            @FormatMoney(context.RunningBalance)
                                         </MudTd>
                                     </RowTemplate>
                                     <PagerContent>
@@ -281,6 +296,30 @@
                         </MudButton>
                     </MudStack>
                 </EditForm>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@if (_showDeletePlanModal)
+{
+    <div class="modal-backdrop">
+        <MudPaper Class="modal-card pa-6">
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.h5">Delete budget plan</MudText>
+                <MudText Typo="Typo.body2" Class="section-copy">
+                    Delete '@_deletePlanName'? This removes the plan, forecast history, recurring rules, planned transactions, and overrides from local storage.
+                </MudText>
+
+                <MudStack Row="true" Class="modal-actions">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="DeletePlanAsync">
+                        Delete plan
+                    </MudButton>
+                </MudStack>
             </MudStack>
         </MudPaper>
     </div>

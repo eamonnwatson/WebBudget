@@ -1,6 +1,6 @@
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.Common;
-using PredictiveBudget.Web.Components.Pages.Models;
+using PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 namespace PredictiveBudget.Web.Tests;
 

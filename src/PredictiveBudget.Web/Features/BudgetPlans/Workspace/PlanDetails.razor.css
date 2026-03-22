@@ -72,8 +72,47 @@
     width: min(100%, 52rem);
 }
 
+.compact-rule-modal {
+    width: min(100%, 42rem);
+}
+
+.compact-form-grid {
+    row-gap: 0.25rem;
+}
+
+.compact-toggle-item {
+    display: flex;
+    align-items: center;
+}
+
+.compact-recurrence-panel {
+    border-color: rgba(13, 110, 253, 0.14);
+}
+
+::deep .compact-rule-modal .mud-input-control {
+    margin-top: 0.125rem;
+    margin-bottom: 0.125rem;
+}
+
+::deep .compact-rule-modal .mud-input-label {
+    font-size: 0.92rem;
+}
+
+::deep .compact-rule-modal .mud-checkbox {
+    margin-top: 0.125rem;
+    margin-bottom: 0.125rem;
+}
+
+::deep .compact-rule-modal .mud-button-root {
+    min-width: 0;
+}
+
 @media (max-width: 959.98px) {
     .actions-cell {
         width: auto;
+    }
+
+    .compact-rule-modal {
+        width: min(100%, 34rem);
     }
 }

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PredictiveBudget.Web.Components.Pages.Models;
+namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 public sealed class CreateBudgetPlanFormModel
 {

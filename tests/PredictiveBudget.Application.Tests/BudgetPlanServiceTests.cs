@@ -134,6 +134,20 @@ public sealed class BudgetPlanServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_RemovesPlanFromRepository()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+
+        await service.DeleteAsync(plan.PlanId, CancellationToken.None);
+
+        Assert.Empty(context.Repository.Plans);
+    }
+
+    [Fact]
     public async Task AddRecurringRuleAsync_AddsWeeklyRuleToPlan()
     {
         var context = new ApplicationTestContext();

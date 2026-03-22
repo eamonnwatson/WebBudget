@@ -216,8 +216,8 @@ else
 @if (_showRecurringRuleModal)
 {
     <div class="modal-backdrop">
-        <MudPaper Class="modal-card modal-card-wide pa-6">
-            <MudStack Spacing="3">
+        <MudPaper Class="modal-card compact-rule-modal pa-4">
+            <MudStack Spacing="2">
                 <MudStack Row="true" AlignItems="AlignItems.Center">
                     <MudText Typo="Typo.h5">@RecurringRuleModalTitle</MudText>
                     <MudSpacer />
@@ -226,53 +226,53 @@ else
 
                 <EditForm Model="_recurringRuleForm" OnValidSubmit="SaveRecurringRuleAsync">
                     <DataAnnotationsValidator />
-                    <MudGrid>
-                        <MudItem xs="12">
-                            <MudTextField T="string" Label="Rule name" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.Name" />
+                    <MudGrid Spacing="2" Class="compact-form-grid">
+                        <MudItem xs="12" md="6">
+                            <MudTextField T="string" Label="Rule name" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Name" />
                         </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudSelect T="TransactionDirection" Label="Direction" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.Direction">
+                        <MudItem xs="12" md="3">
+                            <MudSelect T="TransactionDirection" Label="Direction" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Direction">
                                 <MudSelectItem Value="TransactionDirection.Inflow">Inflow</MudSelectItem>
                                 <MudSelectItem Value="TransactionDirection.Outflow">Outflow</MudSelectItem>
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudNumericField T="decimal?" Label="Amount" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.Amount" />
+                        <MudItem xs="12" md="3">
+                            <MudNumericField T="decimal?" Label="Amount" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Amount" />
                         </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudSelect T="RecurrencePattern" Label="Pattern" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.Pattern">
+                        <MudItem xs="12" md="4">
+                            <MudSelect T="RecurrencePattern" Label="Pattern" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Pattern">
                                 <MudSelectItem Value="RecurrencePattern.Weekly">Weekly</MudSelectItem>
                                 <MudSelectItem Value="RecurrencePattern.MonthlyByDayOfMonth">Monthly</MudSelectItem>
                                 <MudSelectItem Value="RecurrencePattern.YearlyByMonthsAndDay">Yearly</MudSelectItem>
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudDatePicker Label="Effective start" Variant="Variant.Outlined" @bind-Date="_recurringRuleForm.EffectiveStartDate" />
+                        <MudItem xs="12" md="4">
+                            <MudDatePicker Label="Effective start" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Date="_recurringRuleForm.EffectiveStartDate" />
                         </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudDatePicker Label="Effective end" Variant="Variant.Outlined" @bind-Date="_recurringRuleForm.EffectiveEndDate" />
+                        <MudItem xs="12" md="4">
+                            <MudDatePicker Label="Effective end" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Date="_recurringRuleForm.EffectiveEndDate" />
                         </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudSelect T="BusinessDayAdjustment" Label="Business day adjustment" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.BusinessDayAdjustment">
+                        <MudItem xs="12" md="4">
+                            <MudSelect T="BusinessDayAdjustment" Label="Business day adjustment" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.BusinessDayAdjustment">
                                 <MudSelectItem Value="BusinessDayAdjustment.None">None</MudSelectItem>
                                 <MudSelectItem Value="BusinessDayAdjustment.NextBusinessDay">Next business day</MudSelectItem>
                                 <MudSelectItem Value="BusinessDayAdjustment.PreviousBusinessDay">Previous business day</MudSelectItem>
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudNumericField T="int?" Label="Alert days before" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.DefaultAlertDaysBefore" />
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="int?" Label="Alert days before" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.DefaultAlertDaysBefore" />
                         </MudItem>
-                        <MudItem xs="12">
+                        <MudItem xs="12" md="6" Class="compact-toggle-item">
                             <MudCheckBox T="bool" Label="Rule is active" @bind-Value="_recurringRuleForm.IsActive" />
                         </MudItem>
                     </MudGrid>
 
                     @if (_recurringRuleForm.Pattern == RecurrencePattern.Weekly)
                     {
-                        <MudPaper Class="recurrence-panel pa-4 mt-4" Outlined="true">
-                            <MudText Typo="Typo.subtitle1">Weekly settings</MudText>
-                            <MudNumericField T="int?" Label="Repeat every n weeks" Variant="Variant.Outlined" Class="mt-3" @bind-Value="_recurringRuleForm.IntervalWeeks" />
-                            <MudGrid Class="mt-2">
+                        <MudPaper Class="recurrence-panel compact-recurrence-panel pa-3 mt-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle2">Weekly settings</MudText>
+                            <MudNumericField T="int?" Label="Repeat every n weeks" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" @bind-Value="_recurringRuleForm.IntervalWeeks" />
+                            <MudGrid Spacing="1" Class="mt-1">
                                 @foreach (var weekday in WeekdayOptions)
                                 {
                                     <MudItem xs="6" sm="4">
@@ -287,24 +287,24 @@ else
                     }
                     else if (_recurringRuleForm.Pattern == RecurrencePattern.MonthlyByDayOfMonth)
                     {
-                        <MudPaper Class="recurrence-panel pa-4 mt-4" Outlined="true">
-                            <MudText Typo="Typo.subtitle1">Monthly settings</MudText>
-                            <MudGrid Class="mt-2">
+                        <MudPaper Class="recurrence-panel compact-recurrence-panel pa-3 mt-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle2">Monthly settings</MudText>
+                            <MudGrid Spacing="2" Class="mt-1">
                                 <MudItem xs="12" sm="6">
-                                    <MudNumericField T="int?" Label="Repeat every n months" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.IntervalMonths" />
+                                    <MudNumericField T="int?" Label="Repeat every n months" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.IntervalMonths" />
                                 </MudItem>
                                 <MudItem xs="12" sm="6">
-                                    <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" @bind-Value="_recurringRuleForm.DayOfMonth" />
+                                    <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.DayOfMonth" />
                                 </MudItem>
                             </MudGrid>
                         </MudPaper>
                     }
                     else
                     {
-                        <MudPaper Class="recurrence-panel pa-4 mt-4" Outlined="true">
-                            <MudText Typo="Typo.subtitle1">Yearly settings</MudText>
-                            <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" Class="mt-3" @bind-Value="_recurringRuleForm.DayOfMonth" />
-                            <MudGrid Class="mt-2">
+                        <MudPaper Class="recurrence-panel compact-recurrence-panel pa-3 mt-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle2">Yearly settings</MudText>
+                            <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" @bind-Value="_recurringRuleForm.DayOfMonth" />
+                            <MudGrid Spacing="1" Class="mt-1">
                                 @foreach (var month in MonthOptions)
                                 {
                                     <MudItem xs="6" sm="4">
@@ -318,7 +318,7 @@ else
                         </MudPaper>
                     }
 
-                    <MudStack Row="true" Class="modal-actions mt-4">
+                    <MudStack Row="true" Class="modal-actions mt-3">
                         <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
                         <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">
                             Save rule

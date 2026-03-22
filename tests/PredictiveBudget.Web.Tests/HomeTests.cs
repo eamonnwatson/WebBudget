@@ -4,8 +4,8 @@ using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.Common;
 using PredictiveBudget.Domain.Forecasting;
-using PredictiveBudget.Web.Components.Pages;
-using PredictiveBudget.Web.Components.Pages.Models;
+using PredictiveBudget.Web.Features.BudgetPlans.Dashboard;
+using PredictiveBudget.Web.Features.BudgetPlans.Models;
 using PredictiveBudget.Web.Tests.TestSupport;
 
 namespace PredictiveBudget.Web.Tests;
@@ -118,6 +118,33 @@ public sealed class HomeTests
     }
 
     [Fact]
+    public async Task DeletePlanAsync_RemovesSelectedPlanAndFallsBackToRemainingPlan()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var firstPlan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var secondPlan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Travel", "USD", 200m, new DateOnly(2026, 4, 10), "America/New_York"),
+            CancellationToken.None);
+        var component = CreateComponent(service);
+        await ReflectionTestHelper.InvokeAsync(component, "OnInitializedAsync");
+        await ReflectionTestHelper.InvokeAsync(component, "ChangeSelectedPlanAsync", secondPlan.PlanId);
+        ReflectionTestHelper.InvokeVoid(component, "OpenDeletePlanModal");
+
+        await ReflectionTestHelper.InvokeAsync(component, "DeletePlanAsync");
+
+        var plans = ReflectionTestHelper.GetPrivateField<List<BudgetPlan>>(component, "_plans");
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
+
+        Assert.Single(plans);
+        Assert.Equal(firstPlan.PlanId, selectedPlan.PlanId);
+        Assert.DoesNotContain(plans, plan => plan.PlanId == secondPlan.PlanId);
+        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "_showDeletePlanModal"));
+    }
+
+    [Fact]
     public void HelperMethods_FormatValuesForDisplay()
     {
         Assert.Equal(
@@ -129,6 +156,26 @@ public sealed class HomeTests
         Assert.Equal(
             "Mar 20, 2026",
             ReflectionTestHelper.InvokeStatic<string>(typeof(Home), "FormatDate", new DateOnly(2026, 3, 20)));
+    }
+
+    [Fact]
+    public async Task BuildRunningBalances_TracksBalanceAfterEachOccurrence()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+
+        var occurrences = new List<CashflowOccurrence>
+        {
+            new(new DateOnly(2026, 3, 21), "Pay", TransactionDirection.Inflow, new Money(50m, "CAD"), OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
+            new(new DateOnly(2026, 3, 22), "Rent", TransactionDirection.Outflow, new Money(25m, "CAD"), OccurrenceSource.PlannedTransaction, Guid.NewGuid())
+        };
+
+        var balances = ReflectionTestHelper.InvokeStatic<IReadOnlyList<Money>>(typeof(Home), "BuildRunningBalances", plan, occurrences);
+
+        Assert.Equal([150m, 125m], balances.Select(balance => balance.Amount).ToArray());
     }
 
     private static Home CreateComponent(BudgetPlanService service)

@@ -112,4 +112,36 @@ public sealed class SqliteBudgetPlanRepositoryTests
 
         Assert.Equal(["Newer", "Older"], plans.Select(plan => plan.Name).ToArray());
     }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesPersistedPlan()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<BudgetDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        await using (var setupContext = new BudgetDbContext(options))
+        {
+            await setupContext.Database.EnsureCreatedAsync();
+        }
+
+        var repository = new SqliteBudgetPlanRepository(new TestDbContextFactory(options));
+        var plan = new BudgetPlan(
+            Guid.NewGuid(),
+            "Household",
+            "CAD",
+            new Money(150m, "CAD"),
+            new DateOnly(2026, 3, 20),
+            "America/Halifax");
+
+        await repository.SaveAsync(plan, CancellationToken.None);
+        await repository.DeleteAsync(plan.PlanId, CancellationToken.None);
+
+        var loaded = await repository.GetAsync(plan.PlanId, CancellationToken.None);
+        var plans = await repository.ListAsync(CancellationToken.None);
+
+        Assert.Null(loaded);
+        Assert.Empty(plans);
+    }
 }

@@ -35,4 +35,10 @@ internal sealed class InMemoryBudgetPlanRepository : IBudgetPlanRepository
         plans[plan.PlanId] = plan;
         return Task.CompletedTask;
     }
+
+    public Task DeleteAsync(Guid planId, CancellationToken ct)
+    {
+        plans.Remove(planId);
+        return Task.CompletedTask;
+    }
 }
