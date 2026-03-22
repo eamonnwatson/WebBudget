@@ -84,6 +84,17 @@ public sealed class BudgetPlan
             defaultAlertDaysBefore);
     }
 
+    public void RemoveRecurringRule(Guid ruleId)
+    {
+        var rule = _recurringRules.FirstOrDefault(candidate => candidate.RuleId == ruleId)
+            ?? throw new InvalidOperationException($"Recurring rule '{ruleId}' was not found.");
+
+        _recurringRules.Remove(rule);
+        _overrides.RemoveAll(overrideEntry =>
+            overrideEntry.Source == OccurrenceSource.RecurringRule &&
+            overrideEntry.SourceId == ruleId);
+    }
+
     public void UpdatePlannedTransaction(Guid transactionId, DateOnly date, string name, TransactionDirection direction, Money amount)
     {
         if (amount.Currency != Currency) throw new InvalidOperationException("Currency mismatch.");
@@ -92,6 +103,17 @@ public sealed class BudgetPlan
             ?? throw new InvalidOperationException($"Planned transaction '{transactionId}' was not found.");
 
         transaction.Update(date, name, direction, amount);
+    }
+
+    public void RemovePlannedTransaction(Guid transactionId)
+    {
+        var transaction = _plannedTransactions.FirstOrDefault(candidate => candidate.TransactionId == transactionId)
+            ?? throw new InvalidOperationException($"Planned transaction '{transactionId}' was not found.");
+
+        _plannedTransactions.Remove(transaction);
+        _overrides.RemoveAll(overrideEntry =>
+            overrideEntry.Source == OccurrenceSource.PlannedTransaction &&
+            overrideEntry.SourceId == transactionId);
     }
 
     public void UpdateOverride(
@@ -110,5 +132,13 @@ public sealed class BudgetPlan
             ?? throw new InvalidOperationException($"Occurrence override '{overrideId}' was not found.");
 
         overrideEntry.Update(source, sourceId, originalDate, action, newDate, newAmount, newName);
+    }
+
+    public void RemoveOverride(Guid overrideId)
+    {
+        var overrideEntry = _overrides.FirstOrDefault(candidate => candidate.OverrideId == overrideId)
+            ?? throw new InvalidOperationException($"Occurrence override '{overrideId}' was not found.");
+
+        _overrides.Remove(overrideEntry);
     }
 }

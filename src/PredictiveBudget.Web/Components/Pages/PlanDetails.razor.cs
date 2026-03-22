@@ -5,7 +5,6 @@ using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
-using PredictiveBudget.Domain.Forecasting;
 using PredictiveBudget.Web.Components.Pages.Models;
 
 namespace PredictiveBudget.Web.Components.Pages;
@@ -16,6 +15,13 @@ public partial class PlanDetails : ComponentBase
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
     [Parameter] public Guid PlanId { get; set; }
+
+    private enum DeleteTargetKind
+    {
+        RecurringRule,
+        PlannedTransaction,
+        Override
+    }
 
     private static readonly Weekday[] WeekdayOptions =
     [
@@ -34,12 +40,21 @@ public partial class PlanDetails : ComponentBase
             .ToArray();
 
     private BudgetPlan? _plan;
-    private ForecastResult? _forecastResult;
     private BalanceUpdateFormModel _balanceForm = BalanceUpdateFormModel.CreateDefault(0m, DateOnly.FromDateTime(DateTime.Today));
     private RecurringRuleFormModel _recurringRuleForm = RecurringRuleFormModel.CreateDefault();
     private PlannedTransactionFormModel _plannedTransactionForm = PlannedTransactionFormModel.CreateDefault();
     private OccurrenceOverrideFormModel _overrideForm = OccurrenceOverrideFormModel.CreateDefault();
-    private ForecastFormModel _forecastForm = ForecastFormModel.CreateDefault();
+    private Guid? _editingRecurringRuleId;
+    private Guid? _editingPlannedTransactionId;
+    private Guid? _editingOverrideId;
+    private Guid? _deleteTargetId;
+    private DeleteTargetKind? _deleteTargetKind;
+    private string _deleteModalTitle = string.Empty;
+    private string _deleteModalMessage = string.Empty;
+    private bool _showRecurringRuleModal;
+    private bool _showPlannedTransactionModal;
+    private bool _showOverrideModal;
+    private bool _showDeleteModal;
     private bool _isLoading = true;
 
     protected override async Task OnParametersSetAsync()
@@ -48,14 +63,20 @@ public partial class PlanDetails : ComponentBase
     private async Task LoadPlanAsync()
     {
         _isLoading = true;
-        _plan = await BudgetPlanService.GetAsync(PlanId, CancellationToken.None);
 
-        if (_plan is not null)
+        try
         {
-            _balanceForm = BalanceUpdateFormModel.CreateDefault(_plan.StartingBalance.Amount, _plan.BalanceAsOfDate);
-        }
+            _plan = await BudgetPlanService.GetAsync(PlanId, CancellationToken.None);
 
-        _isLoading = false;
+            if (_plan is not null)
+            {
+                _balanceForm = BalanceUpdateFormModel.CreateDefault(_plan.StartingBalance.Amount, _plan.BalanceAsOfDate);
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     private async Task UpdateBalanceAsync()
@@ -67,81 +88,322 @@ public partial class PlanDetails : ComponentBase
                 ToDateOnly(_balanceForm.BalanceAsOfDate)),
             CancellationToken.None);
 
-        _plan = updatedPlan;
+        ApplyUpdatedPlan(updatedPlan);
         Snackbar.Add("Starting balance updated.", Severity.Success);
     }
 
-    private async Task AddRecurringRuleAsync()
+    private void OpenAddRecurringRuleModal()
     {
-        var updatedPlan = await BudgetPlanService.AddRecurringRuleAsync(
-            PlanId,
-            new AddRecurringRuleRequest(
-                _recurringRuleForm.Name,
-                _recurringRuleForm.Direction,
-                _recurringRuleForm.Amount ?? 0m,
-                ToDateOnly(_recurringRuleForm.EffectiveStartDate),
-                _recurringRuleForm.EffectiveEndDate is null ? null : ToDateOnly(_recurringRuleForm.EffectiveEndDate),
-                _recurringRuleForm.Pattern,
-                _recurringRuleForm.IntervalWeeks ?? 1,
-                _recurringRuleForm.SelectedWeekdays.ToArray(),
-                _recurringRuleForm.IntervalMonths ?? 1,
-                _recurringRuleForm.SelectedMonths.ToArray(),
-                _recurringRuleForm.DayOfMonth ?? 1,
-                _recurringRuleForm.BusinessDayAdjustment,
-                _recurringRuleForm.IsActive,
-                _recurringRuleForm.DefaultAlertDaysBefore),
-            CancellationToken.None);
-
-        _plan = updatedPlan;
-        _recurringRuleForm = RecurringRuleFormModel.CreateDefault();
-        Snackbar.Add("Recurring rule added.", Severity.Success);
+        CloseAllModals();
+        _editingRecurringRuleId = null;
+        _recurringRuleForm = CreateRecurringRuleForm();
+        _showRecurringRuleModal = true;
     }
 
-    private async Task AddPlannedTransactionAsync()
+    private void OpenEditRecurringRuleModal(Guid ruleId)
     {
-        var updatedPlan = await BudgetPlanService.AddPlannedTransactionAsync(
-            PlanId,
-            new AddPlannedTransactionRequest(
-                ToDateOnly(_plannedTransactionForm.Date),
-                _plannedTransactionForm.Name,
-                _plannedTransactionForm.Direction,
-                _plannedTransactionForm.Amount ?? 0m),
-            CancellationToken.None);
+        if (_plan is null)
+        {
+            return;
+        }
 
-        _plan = updatedPlan;
-        _plannedTransactionForm = PlannedTransactionFormModel.CreateDefault();
-        Snackbar.Add("Planned transaction added.", Severity.Success);
+        var rule = _plan.RecurringRules.FirstOrDefault(candidate => candidate.RuleId == ruleId);
+        if (rule is null)
+        {
+            return;
+        }
+
+        CloseAllModals();
+        _editingRecurringRuleId = rule.RuleId;
+        _recurringRuleForm = CreateRecurringRuleForm(rule);
+        _showRecurringRuleModal = true;
     }
 
-    private async Task AddOverrideAsync()
+    private async Task SaveRecurringRuleAsync()
     {
-        var updatedPlan = await BudgetPlanService.AddOverrideAsync(
-            PlanId,
-            new AddOccurrenceOverrideRequest(
-                _overrideForm.Source,
-                Guid.Parse(_overrideForm.SourceId),
-                ToDateOnly(_overrideForm.OriginalDate),
-                _overrideForm.Action,
-                _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
-                _overrideForm.NewAmount,
-                _overrideForm.NewName),
-            CancellationToken.None);
+        if (_plan is null)
+        {
+            return;
+        }
 
-        _plan = updatedPlan;
+        BudgetPlan updatedPlan;
+
+        if (_editingRecurringRuleId.HasValue)
+        {
+            updatedPlan = await BudgetPlanService.UpdateRecurringRuleAsync(
+                PlanId,
+                _editingRecurringRuleId.Value,
+                new UpdateRecurringRuleRequest(
+                    _recurringRuleForm.Name,
+                    _recurringRuleForm.Direction,
+                    _recurringRuleForm.Amount ?? 0m,
+                    ToDateOnly(_recurringRuleForm.EffectiveStartDate),
+                    _recurringRuleForm.EffectiveEndDate is null ? null : ToDateOnly(_recurringRuleForm.EffectiveEndDate),
+                    _recurringRuleForm.Pattern,
+                    _recurringRuleForm.IntervalWeeks ?? 1,
+                    _recurringRuleForm.SelectedWeekdays.ToArray(),
+                    _recurringRuleForm.IntervalMonths ?? 1,
+                    _recurringRuleForm.SelectedMonths.ToArray(),
+                    _recurringRuleForm.DayOfMonth ?? 1,
+                    _recurringRuleForm.BusinessDayAdjustment,
+                    _recurringRuleForm.IsActive,
+                    _recurringRuleForm.DefaultAlertDaysBefore),
+                CancellationToken.None);
+
+            Snackbar.Add("Recurring rule updated.", Severity.Success);
+        }
+        else
+        {
+            updatedPlan = await BudgetPlanService.AddRecurringRuleAsync(
+                PlanId,
+                new AddRecurringRuleRequest(
+                    _recurringRuleForm.Name,
+                    _recurringRuleForm.Direction,
+                    _recurringRuleForm.Amount ?? 0m,
+                    ToDateOnly(_recurringRuleForm.EffectiveStartDate),
+                    _recurringRuleForm.EffectiveEndDate is null ? null : ToDateOnly(_recurringRuleForm.EffectiveEndDate),
+                    _recurringRuleForm.Pattern,
+                    _recurringRuleForm.IntervalWeeks ?? 1,
+                    _recurringRuleForm.SelectedWeekdays.ToArray(),
+                    _recurringRuleForm.IntervalMonths ?? 1,
+                    _recurringRuleForm.SelectedMonths.ToArray(),
+                    _recurringRuleForm.DayOfMonth ?? 1,
+                    _recurringRuleForm.BusinessDayAdjustment,
+                    _recurringRuleForm.IsActive,
+                    _recurringRuleForm.DefaultAlertDaysBefore),
+                CancellationToken.None);
+
+            Snackbar.Add("Recurring rule added.", Severity.Success);
+        }
+
+        ApplyUpdatedPlan(updatedPlan);
+        _recurringRuleForm = CreateRecurringRuleForm();
+        CloseAllModals();
+    }
+
+    private Task AddRecurringRuleAsync()
+    {
+        _editingRecurringRuleId = null;
+        return SaveRecurringRuleAsync();
+    }
+
+    private void OpenDeleteRecurringRuleConfirmation(Guid ruleId, string name)
+        => OpenDeleteConfirmation(
+            DeleteTargetKind.RecurringRule,
+            ruleId,
+            "Delete recurring rule",
+            $"Delete '{name}'? Any overrides tied to this rule will also be removed.");
+
+    private void OpenAddPlannedTransactionModal()
+    {
+        CloseAllModals();
+        _editingPlannedTransactionId = null;
+        _plannedTransactionForm = CreatePlannedTransactionForm();
+        _showPlannedTransactionModal = true;
+    }
+
+    private void OpenEditPlannedTransactionModal(Guid transactionId)
+    {
+        if (_plan is null)
+        {
+            return;
+        }
+
+        var transaction = _plan.PlannedTransactions.FirstOrDefault(candidate => candidate.TransactionId == transactionId);
+        if (transaction is null)
+        {
+            return;
+        }
+
+        CloseAllModals();
+        _editingPlannedTransactionId = transaction.TransactionId;
+        _plannedTransactionForm = CreatePlannedTransactionForm(transaction);
+        _showPlannedTransactionModal = true;
+    }
+
+    private async Task SavePlannedTransactionAsync()
+    {
+        if (_plan is null)
+        {
+            return;
+        }
+
+        BudgetPlan updatedPlan;
+
+        if (_editingPlannedTransactionId.HasValue)
+        {
+            updatedPlan = await BudgetPlanService.UpdatePlannedTransactionAsync(
+                PlanId,
+                _editingPlannedTransactionId.Value,
+                new UpdatePlannedTransactionRequest(
+                    ToDateOnly(_plannedTransactionForm.Date),
+                    _plannedTransactionForm.Name,
+                    _plannedTransactionForm.Direction,
+                    _plannedTransactionForm.Amount ?? 0m),
+                CancellationToken.None);
+
+            Snackbar.Add("Planned transaction updated.", Severity.Success);
+        }
+        else
+        {
+            updatedPlan = await BudgetPlanService.AddPlannedTransactionAsync(
+                PlanId,
+                new AddPlannedTransactionRequest(
+                    ToDateOnly(_plannedTransactionForm.Date),
+                    _plannedTransactionForm.Name,
+                    _plannedTransactionForm.Direction,
+                    _plannedTransactionForm.Amount ?? 0m),
+                CancellationToken.None);
+
+            Snackbar.Add("Planned transaction added.", Severity.Success);
+        }
+
+        ApplyUpdatedPlan(updatedPlan);
+        _plannedTransactionForm = CreatePlannedTransactionForm();
+        CloseAllModals();
+    }
+
+    private Task AddPlannedTransactionAsync()
+    {
+        _editingPlannedTransactionId = null;
+        return SavePlannedTransactionAsync();
+    }
+
+    private void OpenDeletePlannedTransactionConfirmation(Guid transactionId, string name)
+        => OpenDeleteConfirmation(
+            DeleteTargetKind.PlannedTransaction,
+            transactionId,
+            "Delete planned transaction",
+            $"Delete '{name}'? Any overrides tied to this transaction will also be removed.");
+
+    private void OpenAddOverrideModal()
+    {
+        if (!CanEditOverrides)
+        {
+            return;
+        }
+
+        CloseAllModals();
+        _editingOverrideId = null;
+        _overrideForm = CreateOverrideForm();
+        SyncOverrideSourceSelection();
+        _showOverrideModal = true;
+    }
+
+    private void OpenEditOverrideModal(Guid overrideId)
+    {
+        if (_plan is null)
+        {
+            return;
+        }
+
+        var overrideEntry = _plan.Overrides.FirstOrDefault(candidate => candidate.OverrideId == overrideId);
+        if (overrideEntry is null)
+        {
+            return;
+        }
+
+        CloseAllModals();
+        _editingOverrideId = overrideEntry.OverrideId;
+        _overrideForm = new OccurrenceOverrideFormModel
+        {
+            Source = overrideEntry.Source,
+            SourceId = overrideEntry.SourceId.ToString(),
+            OriginalDate = overrideEntry.OriginalDate.ToDateTime(TimeOnly.MinValue),
+            Action = overrideEntry.Action,
+            NewDate = overrideEntry.NewDate?.ToDateTime(TimeOnly.MinValue),
+            NewAmount = overrideEntry.NewAmount?.Amount,
+            NewName = overrideEntry.NewName
+        };
+        SyncOverrideSourceSelection();
+        _showOverrideModal = true;
+    }
+
+    private async Task SaveOverrideAsync()
+    {
+        if (_plan is null)
+        {
+            return;
+        }
+
+        BudgetPlan updatedPlan;
+
+        if (_editingOverrideId.HasValue)
+        {
+            updatedPlan = await BudgetPlanService.UpdateOverrideAsync(
+                PlanId,
+                _editingOverrideId.Value,
+                new UpdateOccurrenceOverrideRequest(
+                    _overrideForm.Source,
+                    Guid.Parse(_overrideForm.SourceId),
+                    ToDateOnly(_overrideForm.OriginalDate),
+                    _overrideForm.Action,
+                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
+                    _overrideForm.NewAmount,
+                    _overrideForm.NewName),
+                CancellationToken.None);
+
+            Snackbar.Add("Occurrence override updated.", Severity.Success);
+        }
+        else
+        {
+            updatedPlan = await BudgetPlanService.AddOverrideAsync(
+                PlanId,
+                new AddOccurrenceOverrideRequest(
+                    _overrideForm.Source,
+                    Guid.Parse(_overrideForm.SourceId),
+                    ToDateOnly(_overrideForm.OriginalDate),
+                    _overrideForm.Action,
+                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
+                    _overrideForm.NewAmount,
+                    _overrideForm.NewName),
+                CancellationToken.None);
+
+            Snackbar.Add("Occurrence override added.", Severity.Success);
+        }
+
+        ApplyUpdatedPlan(updatedPlan);
         _overrideForm = OccurrenceOverrideFormModel.CreateDefault();
-        Snackbar.Add("Override added.", Severity.Success);
+        CloseAllModals();
     }
 
-    private async Task RunForecastAsync()
+    private Task AddOverrideAsync()
     {
-        _forecastResult = await BudgetPlanService.ForecastAsync(
-            PlanId,
-            new ForecastRequest(
-                ToDateOnly(_forecastForm.StartDate),
-                ToDateOnly(_forecastForm.EndDate)),
-            CancellationToken.None);
+        _editingOverrideId = null;
+        return SaveOverrideAsync();
+    }
 
-        Snackbar.Add("Forecast calculated.", Severity.Success);
+    private void OpenDeleteOverrideConfirmation(Guid overrideId, string sourceLabel)
+        => OpenDeleteConfirmation(
+            DeleteTargetKind.Override,
+            overrideId,
+            "Delete occurrence override",
+            $"Delete the override for '{sourceLabel}'?");
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_deleteTargetId is null || _deleteTargetKind is null)
+        {
+            return;
+        }
+
+        BudgetPlan updatedPlan = _deleteTargetKind.Value switch
+        {
+            DeleteTargetKind.RecurringRule => await BudgetPlanService.DeleteRecurringRuleAsync(PlanId, _deleteTargetId.Value, CancellationToken.None),
+            DeleteTargetKind.PlannedTransaction => await BudgetPlanService.DeletePlannedTransactionAsync(PlanId, _deleteTargetId.Value, CancellationToken.None),
+            DeleteTargetKind.Override => await BudgetPlanService.DeleteOverrideAsync(PlanId, _deleteTargetId.Value, CancellationToken.None),
+            _ => throw new InvalidOperationException("Unknown delete target.")
+        };
+
+        ApplyUpdatedPlan(updatedPlan);
+        CloseAllModals();
+        Snackbar.Add("Item deleted.", Severity.Success);
+    }
+
+    private void OnOverrideSourceChanged(OccurrenceSource source)
+    {
+        _overrideForm.Source = source;
+        SyncOverrideSourceSelection();
     }
 
     private static DateOnly ToDateOnly(DateTime? value)
@@ -213,9 +475,12 @@ public partial class PlanDetails : ComponentBase
         return source switch
         {
             OccurrenceSource.RecurringRule => _plan.RecurringRules
+                .OrderBy(rule => rule.Name)
                 .Select(rule => new SourceOption(rule.RuleId.ToString(), rule.Name))
                 .ToList(),
             OccurrenceSource.PlannedTransaction => _plan.PlannedTransactions
+                .OrderBy(transaction => transaction.Date)
+                .ThenBy(transaction => transaction.Name)
                 .Select(transaction => new SourceOption(transaction.TransactionId.ToString(), transaction.Name))
                 .ToList(),
             _ => []
@@ -247,6 +512,151 @@ public partial class PlanDetails : ComponentBase
             _ => overrideEntry.Action.ToString()
         };
 
-    private static string GetBalanceClass(decimal amount)
-        => amount < 0m ? "balance-negative" : "balance-positive";
+    private bool CanEditOverrides
+        => _plan is not null
+           && (_plan.RecurringRules.Count > 0 || _plan.PlannedTransactions.Count > 0);
+
+    private string RecurringRuleModalTitle
+        => _editingRecurringRuleId.HasValue ? "Edit recurring rule" : "Add recurring rule";
+
+    private string PlannedTransactionModalTitle
+        => _editingPlannedTransactionId.HasValue ? "Edit planned transaction" : "Add planned transaction";
+
+    private string OverrideModalTitle
+        => _editingOverrideId.HasValue ? "Edit occurrence override" : "Add occurrence override";
+
+    private void OpenDeleteConfirmation(DeleteTargetKind kind, Guid id, string title, string message)
+    {
+        CloseAllModals();
+        _deleteTargetKind = kind;
+        _deleteTargetId = id;
+        _deleteModalTitle = title;
+        _deleteModalMessage = message;
+        _showDeleteModal = true;
+    }
+
+    private void ApplyUpdatedPlan(BudgetPlan updatedPlan)
+    {
+        _plan = updatedPlan;
+        _balanceForm = BalanceUpdateFormModel.CreateDefault(updatedPlan.StartingBalance.Amount, updatedPlan.BalanceAsOfDate);
+    }
+
+    private void CloseAllModals()
+    {
+        _showRecurringRuleModal = false;
+        _showPlannedTransactionModal = false;
+        _showOverrideModal = false;
+        _showDeleteModal = false;
+        _editingRecurringRuleId = null;
+        _editingPlannedTransactionId = null;
+        _editingOverrideId = null;
+        _deleteTargetId = null;
+        _deleteTargetKind = null;
+        _deleteModalTitle = string.Empty;
+        _deleteModalMessage = string.Empty;
+    }
+
+    private RecurringRuleFormModel CreateRecurringRuleForm(RecurringTransactionRule? rule = null)
+    {
+        if (rule is null)
+        {
+            var form = RecurringRuleFormModel.CreateDefault();
+            if (_plan is not null)
+            {
+                form.EffectiveStartDate = _plan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue);
+            }
+
+            return form;
+        }
+
+        var recurringRuleForm = new RecurringRuleFormModel
+        {
+            Name = rule.Name,
+            Direction = rule.Direction,
+            Amount = rule.Amount.Amount,
+            EffectiveStartDate = rule.EffectiveStartDate.ToDateTime(TimeOnly.MinValue),
+            EffectiveEndDate = rule.EffectiveEndDate?.ToDateTime(TimeOnly.MinValue),
+            BusinessDayAdjustment = rule.Recurrence.BusinessDayAdjustment,
+            IsActive = rule.IsActive,
+            DefaultAlertDaysBefore = rule.DefaultAlertDaysBefore
+        };
+
+        recurringRuleForm.SelectedWeekdays.Clear();
+        recurringRuleForm.SelectedMonths.Clear();
+
+        switch (rule.Recurrence)
+        {
+            case WeeklyRecurrence weekly:
+                recurringRuleForm.Pattern = RecurrencePattern.Weekly;
+                recurringRuleForm.IntervalWeeks = weekly.IntervalWeeks;
+                foreach (var weekday in weekly.Weekdays)
+                {
+                    recurringRuleForm.SelectedWeekdays.Add(weekday);
+                }
+                break;
+            case MonthlyByDayOfMonthRecurrence monthly:
+                recurringRuleForm.Pattern = RecurrencePattern.MonthlyByDayOfMonth;
+                recurringRuleForm.IntervalMonths = monthly.IntervalMonths;
+                recurringRuleForm.DayOfMonth = monthly.DayOfMonth;
+                break;
+            case YearlyByMonthsAndDayRecurrence yearly:
+                recurringRuleForm.Pattern = RecurrencePattern.YearlyByMonthsAndDay;
+                recurringRuleForm.DayOfMonth = yearly.DayOfMonth;
+                foreach (var month in yearly.Months)
+                {
+                    recurringRuleForm.SelectedMonths.Add(month);
+                }
+                break;
+        }
+
+        return recurringRuleForm;
+    }
+
+    private PlannedTransactionFormModel CreatePlannedTransactionForm(PlannedTransaction? transaction = null)
+    {
+        if (transaction is null)
+        {
+            var form = PlannedTransactionFormModel.CreateDefault();
+            if (_plan is not null)
+            {
+                form.Date = _plan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue);
+            }
+
+            return form;
+        }
+
+        return new PlannedTransactionFormModel
+        {
+            Date = transaction.Date.ToDateTime(TimeOnly.MinValue),
+            Name = transaction.Name,
+            Direction = transaction.Direction,
+            Amount = transaction.Amount.Amount
+        };
+    }
+
+    private OccurrenceOverrideFormModel CreateOverrideForm()
+    {
+        var form = OccurrenceOverrideFormModel.CreateDefault();
+        if (_plan is not null)
+        {
+            form.OriginalDate = _plan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue);
+        }
+
+        return form;
+    }
+
+    private void SyncOverrideSourceSelection()
+    {
+        var options = GetSourceOptions(_overrideForm.Source);
+        if (options.Count == 0)
+        {
+            _overrideForm.SourceId = string.Empty;
+            return;
+        }
+
+        if (options.All(option => option.Id != _overrideForm.SourceId))
+        {
+            _overrideForm.SourceId = options[0].Id;
+        }
+    }
 }

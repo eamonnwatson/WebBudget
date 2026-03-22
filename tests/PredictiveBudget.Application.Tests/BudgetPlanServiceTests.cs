@@ -325,6 +325,51 @@ public sealed class BudgetPlanServiceTests
     }
 
     [Fact]
+    public async Task DeleteRecurringRuleAsync_RemovesRuleAndDependentOverrides()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Salary", "CAD", 0m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var seededPlan = await service.AddRecurringRuleAsync(
+            plan.PlanId,
+            new AddRecurringRuleRequest(
+                "Payday",
+                TransactionDirection.Inflow,
+                2000m,
+                new DateOnly(2026, 3, 20),
+                null,
+                RecurrencePattern.Weekly,
+                1,
+                [Weekday.Friday],
+                1,
+                [],
+                20,
+                BusinessDayAdjustment.None,
+                true,
+                3),
+            CancellationToken.None);
+        var ruleId = Assert.Single(seededPlan.RecurringRules).RuleId;
+        seededPlan = await service.AddOverrideAsync(
+            plan.PlanId,
+            new AddOccurrenceOverrideRequest(
+                OccurrenceSource.RecurringRule,
+                ruleId,
+                new DateOnly(2026, 3, 27),
+                OverrideAction.Skip,
+                null,
+                null,
+                null),
+            CancellationToken.None);
+
+        var updated = await service.DeleteRecurringRuleAsync(plan.PlanId, ruleId, CancellationToken.None);
+
+        Assert.Empty(updated.RecurringRules);
+        Assert.Empty(updated.Overrides);
+    }
+
+    [Fact]
     public async Task AddPlannedTransactionAsync_TrimsNameAndPersistsTransaction()
     {
         var context = new ApplicationTestContext();
@@ -368,6 +413,37 @@ public sealed class BudgetPlanServiceTests
         Assert.Equal("Bonus", transaction.Name);
         Assert.Equal(TransactionDirection.Inflow, transaction.Direction);
         Assert.Equal(250m, transaction.Amount.Amount);
+    }
+
+    [Fact]
+    public async Task DeletePlannedTransactionAsync_RemovesTransactionAndDependentOverrides()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Bills", "CAD", 50m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var seededPlan = await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 100m),
+            CancellationToken.None);
+        var transactionId = Assert.Single(seededPlan.PlannedTransactions).TransactionId;
+        seededPlan = await service.AddOverrideAsync(
+            plan.PlanId,
+            new AddOccurrenceOverrideRequest(
+                OccurrenceSource.PlannedTransaction,
+                transactionId,
+                new DateOnly(2026, 3, 21),
+                OverrideAction.ReplaceAmount,
+                null,
+                25m,
+                null),
+            CancellationToken.None);
+
+        var updated = await service.DeletePlannedTransactionAsync(plan.PlanId, transactionId, CancellationToken.None);
+
+        Assert.Empty(updated.PlannedTransactions);
+        Assert.Empty(updated.Overrides);
     }
 
     [Fact]
@@ -473,6 +549,37 @@ public sealed class BudgetPlanServiceTests
         Assert.Equal(OverrideAction.ReplaceName, overrideEntry.Action);
         Assert.Null(overrideEntry.NewAmount);
         Assert.Equal("Deferred rent", overrideEntry.NewName);
+    }
+
+    [Fact]
+    public async Task DeleteOverrideAsync_RemovesOverride()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Bills", "CAD", 50m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var updatedPlan = await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 100m),
+            CancellationToken.None);
+        var sourceId = Assert.Single(updatedPlan.PlannedTransactions).TransactionId;
+        var overriddenPlan = await service.AddOverrideAsync(
+            plan.PlanId,
+            new AddOccurrenceOverrideRequest(
+                OccurrenceSource.PlannedTransaction,
+                sourceId,
+                new DateOnly(2026, 3, 21),
+                OverrideAction.ReplaceAmount,
+                null,
+                25m,
+                null),
+            CancellationToken.None);
+        var overrideId = Assert.Single(overriddenPlan.Overrides).OverrideId;
+
+        var updated = await service.DeleteOverrideAsync(plan.PlanId, overrideId, CancellationToken.None);
+
+        Assert.Empty(updated.Overrides);
     }
 
     [Fact]

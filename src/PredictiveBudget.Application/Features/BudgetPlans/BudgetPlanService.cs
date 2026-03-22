@@ -99,6 +99,14 @@ public sealed class BudgetPlanService(
         return plan;
     }
 
+    public async Task<BudgetPlan> DeleteRecurringRuleAsync(Guid planId, Guid ruleId, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+        plan.RemoveRecurringRule(ruleId);
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
     public async Task<BudgetPlan> AddPlannedTransactionAsync(Guid planId, AddPlannedTransactionRequest request, CancellationToken ct)
     {
         var plan = await RequirePlanAsync(planId, ct);
@@ -127,6 +135,14 @@ public sealed class BudgetPlanService(
             request.Direction,
             new Money(request.Amount, plan.Currency));
 
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
+    public async Task<BudgetPlan> DeletePlannedTransactionAsync(Guid planId, Guid transactionId, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+        plan.RemovePlannedTransaction(transactionId);
         await repository.SaveAsync(plan, ct);
         return plan;
     }
@@ -169,6 +185,14 @@ public sealed class BudgetPlanService(
                 : null,
             request.Action == OverrideAction.ReplaceName ? NormalizeOptional(request.NewName) : null);
 
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
+    public async Task<BudgetPlan> DeleteOverrideAsync(Guid planId, Guid overrideId, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+        plan.RemoveOverride(overrideId);
         await repository.SaveAsync(plan, ct);
         return plan;
     }

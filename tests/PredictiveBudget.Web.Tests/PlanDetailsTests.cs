@@ -4,7 +4,6 @@ using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
-using PredictiveBudget.Domain.Forecasting;
 using PredictiveBudget.Web.Components.Pages;
 using PredictiveBudget.Web.Components.Pages.Models;
 using PredictiveBudget.Web.Tests.TestSupport;
@@ -84,6 +83,45 @@ public sealed class PlanDetailsTests
     }
 
     [Fact]
+    public async Task OpenEditRecurringRuleModal_LoadsExistingRuleIntoForm()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 125m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var seededPlan = await service.AddRecurringRuleAsync(
+            plan.PlanId,
+            new AddRecurringRuleRequest(
+                "Payday",
+                TransactionDirection.Inflow,
+                1000m,
+                new DateOnly(2026, 3, 20),
+                null,
+                RecurrencePattern.Weekly,
+                1,
+                [Weekday.Friday],
+                1,
+                [],
+                20,
+                BusinessDayAdjustment.None,
+                true,
+                3),
+            CancellationToken.None);
+        var ruleId = seededPlan.RecurringRules.Single().RuleId;
+        var component = CreateComponent(service, plan.PlanId);
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+
+        ReflectionTestHelper.InvokeVoid(component, "OpenEditRecurringRuleModal", ruleId);
+
+        var form = ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "_recurringRuleForm");
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showRecurringRuleModal"));
+        Assert.Equal("Payday", form.Name);
+        Assert.Equal(TransactionDirection.Inflow, form.Direction);
+        Assert.Equal(1000m, form.Amount);
+    }
+
+    [Fact]
     public async Task AddPlannedTransactionAsync_AddsTransactionAndResetsForm()
     {
         var context = new WebBudgetPlanContext();
@@ -106,6 +144,30 @@ public sealed class PlanDetailsTests
         var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
         Assert.Single(updatedPlan.PlannedTransactions);
         Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<PlannedTransactionFormModel>(component, "_plannedTransactionForm").Name);
+    }
+
+    [Fact]
+    public async Task ConfirmDeleteAsync_RemovesPlannedTransactionAfterConfirmation()
+    {
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 125m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var seededPlan = await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 40m),
+            CancellationToken.None);
+        var transactionId = seededPlan.PlannedTransactions.Single().TransactionId;
+        var component = CreateComponent(service, plan.PlanId);
+        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
+
+        ReflectionTestHelper.InvokeVoid(component, "OpenDeletePlannedTransactionConfirmation", transactionId, "Rent");
+        await ReflectionTestHelper.InvokeAsync(component, "ConfirmDeleteAsync");
+
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        Assert.Empty(updatedPlan.PlannedTransactions);
+        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "_showDeleteModal"));
     }
 
     [Fact]
@@ -137,33 +199,6 @@ public sealed class PlanDetailsTests
         var latestPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
         Assert.Single(latestPlan.Overrides);
         Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<OccurrenceOverrideFormModel>(component, "_overrideForm").SourceId);
-    }
-
-    [Fact]
-    public async Task RunForecastAsync_SetsForecastResult()
-    {
-        var context = new WebBudgetPlanContext();
-        var service = context.CreateService();
-        var plan = await service.CreateAsync(
-            new CreateBudgetPlanRequest("Household", "CAD", 50m, new DateOnly(2026, 3, 20), "America/Halifax"),
-            CancellationToken.None);
-        await service.AddPlannedTransactionAsync(
-            plan.PlanId,
-            new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Rent", TransactionDirection.Outflow, 100m),
-            CancellationToken.None);
-        var component = CreateComponent(service, plan.PlanId);
-        await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
-        ReflectionTestHelper.SetPrivateField(component, "_forecastForm", new ForecastFormModel
-        {
-            StartDate = new DateTime(2026, 3, 20),
-            EndDate = new DateTime(2026, 3, 22)
-        });
-
-        await ReflectionTestHelper.InvokeAsync(component, "RunForecastAsync");
-
-        var forecast = ReflectionTestHelper.GetPrivateField<ForecastResult?>(component, "_forecastResult");
-        Assert.NotNull(forecast);
-        Assert.Equal(new DateOnly(2026, 3, 21), forecast.Summary.FirstBelowZeroDate);
     }
 
     [Fact]
@@ -210,16 +245,12 @@ public sealed class PlanDetailsTests
             component,
             "GetOverrideSourceLabel",
             new OccurrenceOverride(Guid.NewGuid(), planId, OccurrenceSource.RecurringRule, recurringRuleId, new DateOnly(2026, 3, 20), OverrideAction.Skip));
-        var positiveClass = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "GetBalanceClass", 1m);
-        var negativeClass = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "GetBalanceClass", -1m);
 
         Assert.Equal("Every 1 week(s) on Friday", recurrenceText);
         Assert.Equal("Mar 20, 2026 onward", windowText);
         Assert.Equal("Move to Mar 25, 2026", overrideText);
         Assert.Single(sourceOptions);
         Assert.Equal("Payday", sourceLabel);
-        Assert.Equal("balance-positive", positiveClass);
-        Assert.Equal("balance-negative", negativeClass);
     }
 
     [Fact]

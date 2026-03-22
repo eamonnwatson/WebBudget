@@ -5,30 +5,31 @@
     justify-content: center;
 }
 
-.hero-panel {
+.workspace-card {
     background:
-        radial-gradient(circle at top right, rgba(13, 202, 240, 0.18), transparent 26%),
-        linear-gradient(135deg, #212529 0%, #2b3035 62%, #0d6efd 100%);
+        radial-gradient(circle at top right, rgba(13, 202, 240, 0.14), transparent 28%),
+        linear-gradient(135deg, rgba(33, 37, 41, 0.98), rgba(43, 48, 53, 0.98));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: #f8f9fa;
 }
 
-.header-actions {
+.header-actions,
+.workspace-summary,
+.table-toolbar,
+.modal-actions {
     gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
-.section-kicker {
+.section-kicker,
+.section-copy {
     color: rgba(248, 249, 250, 0.72);
 }
 
-.hero-copy {
-    max-width: 48rem;
-    color: rgba(248, 249, 250, 0.84);
-}
-
-.stat-tile {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f8f9fa;
+.stat-strip {
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .panel-card {
@@ -37,22 +38,42 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.section-copy {
-    color: rgba(248, 249, 250, 0.72);
+.recurrence-panel,
+.modal-card {
+    background: rgba(52, 58, 64, 0.94);
+    border: 1px solid rgba(13, 110, 253, 0.18);
 }
 
-.summary-card,
-.recurrence-panel {
-    background: rgba(52, 58, 64, 0.92);
-    border-color: rgba(13, 110, 253, 0.2);
+.actions-cell {
+    width: 5rem;
+    text-align: right;
+    white-space: nowrap;
 }
 
-.balance-negative {
-    color: #dc3545;
-    font-weight: 700;
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(6px);
 }
 
-.balance-positive {
-    color: #198754;
-    font-weight: 700;
+.modal-card {
+    width: min(100%, 40rem);
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+}
+
+.modal-card-wide {
+    width: min(100%, 52rem);
+}
+
+@media (max-width: 959.98px) {
+    .actions-cell {
+        width: auto;
+    }
 }
