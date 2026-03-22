@@ -1,0 +1,17 @@
+services:
+  predictivebudget:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: predictivebudget:latest
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__BudgetDb: Data Source=/data/predictivebudget.db
+    volumes:
+      - predictivebudget-data:/data
+    restart: unless-stopped
+
+volumes:
+  predictivebudget-data:
