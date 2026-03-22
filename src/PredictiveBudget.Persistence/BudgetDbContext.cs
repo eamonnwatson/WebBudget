@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace PredictiveBudget.Web.Data;
+namespace PredictiveBudget.Persistence;
 
 public sealed class BudgetDbContext(DbContextOptions<BudgetDbContext> options) : DbContext(options)
 {

@@ -1,10 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using PredictiveBudget.Application.Common;
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.Forecasting;
+using PredictiveBudget.Persistence;
 using PredictiveBudget.Web.Components;
-using PredictiveBudget.Web.Data;
 using PredictiveBudget.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,12 +19,9 @@ Directory.CreateDirectory(dataDirectory);
 string connectionString = builder.Configuration.GetConnectionString("BudgetDb")
     ?? $"Data Source={Path.Combine(dataDirectory, "predictivebudget.db")}";
 
-builder.Services.AddDbContextFactory<BudgetDbContext>(options =>
-    options.UseSqlite(connectionString));
-
+builder.Services.AddPredictiveBudgetPersistence(connectionString);
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddSingleton<IForecastEngine, ForecastEngine>();
-builder.Services.AddScoped<IBudgetPlanRepository, SqliteBudgetPlanRepository>();
 builder.Services.AddScoped<BudgetPlanService>();
 
 var app = builder.Build();
@@ -42,13 +38,5 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-await EnsureDatabaseAsync(app.Services);
+await app.Services.EnsureBudgetDatabaseCreatedAsync();
 app.Run();
-
-static async Task EnsureDatabaseAsync(IServiceProvider services)
-{
-    await using var scope = services.CreateAsyncScope();
-    var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<BudgetDbContext>>();
-    await using var dbContext = await factory.CreateDbContextAsync();
-    await dbContext.Database.EnsureCreatedAsync();
-}

@@ -1,19 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MudBlazor" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PredictiveBudget.Application\PredictiveBudget.Application.csproj" />
     <ProjectReference Include="..\PredictiveBudget.Domain\PredictiveBudget.Domain.csproj" />
-    <ProjectReference Include="..\PredictiveBudget.Persistence\PredictiveBudget.Persistence.csproj" />
   </ItemGroup>
 </Project>

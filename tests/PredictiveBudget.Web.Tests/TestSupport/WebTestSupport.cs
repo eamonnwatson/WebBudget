@@ -5,7 +5,7 @@ using PredictiveBudget.Application.Common;
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.Forecasting;
-using PredictiveBudget.Web.Data;
+using PredictiveBudget.Persistence;
 
 namespace PredictiveBudget.Web.Tests.TestSupport;
 

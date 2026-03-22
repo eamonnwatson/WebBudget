@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\PredictiveBudget.Web\PredictiveBudget.Web.csproj" />
     <ProjectReference Include="..\..\src\PredictiveBudget.Application\PredictiveBudget.Application.csproj" />
     <ProjectReference Include="..\..\src\PredictiveBudget.Domain\PredictiveBudget.Domain.csproj" />
+    <ProjectReference Include="..\..\src\PredictiveBudget.Persistence\PredictiveBudget.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

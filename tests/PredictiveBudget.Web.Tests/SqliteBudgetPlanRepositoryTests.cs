@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.Common;
-using PredictiveBudget.Web.Data;
+using PredictiveBudget.Persistence;
 using PredictiveBudget.Web.Tests.TestSupport;
 
 namespace PredictiveBudget.Web.Tests;

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PredictiveBudget.Application.Common;
 using PredictiveBudget.Domain.BudgetPlans;
 
-namespace PredictiveBudget.Web.Data;
+namespace PredictiveBudget.Persistence;
 
 public sealed class SqliteBudgetPlanRepository : IBudgetPlanRepository
 {

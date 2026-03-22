@@ -4,7 +4,7 @@ using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
 
-namespace PredictiveBudget.Web.Data;
+namespace PredictiveBudget.Persistence;
 
 internal static class BudgetPlanMapper
 {
