@@ -144,6 +144,53 @@ public sealed class ForecastEngineTests
         Assert.Equal([new DateOnly(2026, 3, 21), new DateOnly(2026, 3, 22)], result.BelowZeroDates);
     }
 
+    [Fact]
+    public void Forecast_RollsForwardBalanceFromBalanceAsOfDateBeforeVisibleRange()
+    {
+        var plan = new BudgetPlan(
+            Guid.NewGuid(),
+            "Household",
+            "CAD",
+            new Money(100m, "CAD"),
+            new DateOnly(2026, 2, 1),
+            "America/Halifax");
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            Guid.NewGuid(),
+            plan.PlanId,
+            new DateOnly(2026, 2, 10),
+            "Mid-month bill",
+            TransactionDirection.Outflow,
+            new Money(25m, "CAD")));
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            Guid.NewGuid(),
+            plan.PlanId,
+            new DateOnly(2026, 3, 1),
+            "Payday",
+            TransactionDirection.Inflow,
+            new Money(50m, "CAD")));
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            Guid.NewGuid(),
+            plan.PlanId,
+            new DateOnly(2026, 3, 22),
+            "Groceries",
+            TransactionDirection.Outflow,
+            new Money(10m, "CAD")));
+
+        var engine = new ForecastEngine();
+
+        var result = engine.Forecast(plan, new DateRange(new DateOnly(2026, 3, 22), new DateOnly(2026, 3, 23)));
+
+        Assert.Equal(115m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 22)).EndOfDayBalance.Amount);
+        Assert.Equal(115m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 23)).EndOfDayBalance.Amount);
+        Assert.Collection(
+            result.Occurrences,
+            occurrence =>
+            {
+                Assert.Equal(new DateOnly(2026, 3, 22), occurrence.Date);
+                Assert.Equal("Groceries", occurrence.Name);
+            });
+    }
+
     private static BudgetPlan CreatePlan()
         => new(
             Guid.NewGuid(),

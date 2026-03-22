@@ -27,12 +27,12 @@ public sealed class FormModelTests
     }
 
     [Fact]
-    public void ForecastFormModel_CreateDefault_StartsWithNinetyDayWindow()
+    public void ForecastFormModel_CreateDefault_StartsWithOneYearWindow()
     {
         var model = ForecastFormModel.CreateDefault();
 
         Assert.Equal(DateTime.Today, model.StartDate);
-        Assert.Equal(DateTime.Today.AddDays(90), model.EndDate);
+        Assert.Equal(DateTime.Today.AddDays(365), model.EndDate);
     }
 
     [Fact]

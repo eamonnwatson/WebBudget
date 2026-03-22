@@ -116,21 +116,36 @@
                 else
                 {
                     <MudGrid>
-                        <MudItem xs="12" md="4">
+                        <MudItem xs="12" md="6" lg="3">
+                            <MudPaper Class="summary-card pa-4" Outlined="true">
+                                <MudText Typo="Typo.overline">Today's balance</MudText>
+                                @if (TodayBalancePoint is null)
+                                {
+                                    <MudText Typo="Typo.h5">Outside window</MudText>
+                                    <MudText Typo="Typo.body2">Include @DateTime.Today.ToString("MMM d, yyyy") in the selected range</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.h5">@FormatMoney(TodayBalancePoint.EndOfDayBalance)</MudText>
+                                    <MudText Typo="Typo.body2">@FormatDate(TodayBalancePoint.Date)</MudText>
+                                }
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="3">
                             <MudPaper Class="summary-card pa-4" Outlined="true">
                                 <MudText Typo="Typo.overline">Maximum balance</MudText>
                                 <MudText Typo="Typo.h5">@FormatMoney(_forecastResult.Summary.MaxBalance)</MudText>
                                 <MudText Typo="Typo.body2">@FormatDate(_forecastResult.Summary.MaxDate)</MudText>
                             </MudPaper>
                         </MudItem>
-                        <MudItem xs="12" md="4">
+                        <MudItem xs="12" md="6" lg="3">
                             <MudPaper Class="summary-card pa-4" Outlined="true">
                                 <MudText Typo="Typo.overline">Minimum balance</MudText>
                                 <MudText Typo="Typo.h5">@FormatMoney(_forecastResult.Summary.MinBalance)</MudText>
                                 <MudText Typo="Typo.body2">@FormatDate(_forecastResult.Summary.MinDate)</MudText>
                             </MudPaper>
                         </MudItem>
-                        <MudItem xs="12" md="4">
+                        <MudItem xs="12" md="6" lg="3">
                             <MudPaper Class="summary-card pa-4" Outlined="true">
                                 <MudText Typo="Typo.overline">First below zero</MudText>
                                 <MudText Typo="Typo.h5">@(_forecastResult.Summary.FirstBelowZeroDate is null ? "Stays above zero" : FormatDate(_forecastResult.Summary.FirstBelowZeroDate.Value))</MudText>

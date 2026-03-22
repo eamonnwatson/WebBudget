@@ -32,12 +32,13 @@ public sealed class HomeTests
         var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
         var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "_forecastForm");
         var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_forecastResult");
+        var expectedStartDate = DateTime.Today;
 
         Assert.Equal(2, plans.Count);
         Assert.Equal(expectedPlan.PlanId, selectedPlan.PlanId);
-        Assert.Equal(expectedPlan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue), forecastForm.StartDate);
-        Assert.Equal(expectedPlan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue).AddDays(365), forecastForm.EndDate);
-        Assert.Equal(expectedPlan.BalanceAsOfDate, forecastResult.Range.Start);
+        Assert.Equal(expectedStartDate, forecastForm.StartDate);
+        Assert.Equal(expectedStartDate.AddDays(365), forecastForm.EndDate);
+        Assert.Equal(DateOnly.FromDateTime(expectedStartDate), forecastResult.Range.Start);
         Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "_isLoading"));
     }
 
@@ -61,8 +62,8 @@ public sealed class HomeTests
         var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "_forecastForm");
 
         Assert.Equal(secondPlan.PlanId, selectedPlan.PlanId);
-        Assert.Equal(new DateTime(2026, 4, 10), forecastForm.StartDate);
-        Assert.Equal(new DateTime(2027, 4, 10), forecastForm.EndDate);
+        Assert.Equal(DateTime.Today, forecastForm.StartDate);
+        Assert.Equal(DateTime.Today.AddDays(365), forecastForm.EndDate);
     }
 
     [Fact]
@@ -156,6 +157,32 @@ public sealed class HomeTests
         Assert.Equal(
             "Mar 20, 2026",
             ReflectionTestHelper.InvokeStatic<string>(typeof(Home), "FormatDate", new DateOnly(2026, 3, 20)));
+    }
+
+    [Fact]
+    public void CreateDefaultForecastChartOptions_DisablesDataMarkers()
+    {
+        var options = ReflectionTestHelper.InvokeStatic<LineChartOptions>(typeof(Home), "CreateDefaultForecastChartOptions", "CAD");
+
+        Assert.False(options.ShowDataMarkers);
+        Assert.False(options.ShowLegend);
+    }
+
+    [Fact]
+    public void GetBalancePointForDate_ReturnsMatchingDailyPoint()
+    {
+        var points = new List<DailyBalancePoint>
+        {
+            new(new DateOnly(2026, 3, 21), new Money(100m, "CAD")),
+            new(new DateOnly(2026, 3, 22), new Money(125m, "CAD"))
+        };
+
+        var match = ReflectionTestHelper.InvokeStatic<DailyBalancePoint?>(typeof(Home), "GetBalancePointForDate", points, new DateOnly(2026, 3, 22));
+        var missing = ReflectionTestHelper.InvokeStatic<DailyBalancePoint?>(typeof(Home), "GetBalancePointForDate", points, new DateOnly(2026, 3, 23));
+
+        Assert.NotNull(match);
+        Assert.Equal(125m, match.EndOfDayBalance.Amount);
+        Assert.Null(missing);
     }
 
     [Fact]

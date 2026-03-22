@@ -8,9 +8,9 @@ public sealed class ForecastFormModel
     public DateTime? StartDate { get; set; } = DateTime.Today;
 
     [Required]
-    public DateTime? EndDate { get; set; } = DateTime.Today.AddDays(90);
+    public DateTime? EndDate { get; set; } = DateTime.Today.AddDays(365);
 
-    public static ForecastFormModel CreateDefault(DateOnly? startDate = null, int durationDays = 90)
+    public static ForecastFormModel CreateDefault(DateOnly? startDate = null, int durationDays = 365)
     {
         var start = (startDate ?? DateOnly.FromDateTime(DateTime.Today)).ToDateTime(TimeOnly.MinValue);
 

@@ -16,7 +16,7 @@ public partial class Home : ComponentBase
     private readonly List<BudgetPlan> _plans = [];
     private List<ChartSeries<double>> _forecastChartSeries = [];
     private string[] _forecastChartLabels = [];
-    private LineChartOptions _forecastChartOptions = CreateForecastChartOptions("CAD");
+    private LineChartOptions _forecastChartOptions = CreateDefaultForecastChartOptions("CAD");
     private CreateBudgetPlanFormModel _createForm = CreateBudgetPlanFormModel.CreateDefault();
     private BalanceUpdateFormModel _balanceForm = BalanceUpdateFormModel.CreateDefault(0m, DateOnly.FromDateTime(DateTime.Today));
     private ForecastFormModel _forecastForm = ForecastFormModel.CreateDefault();
@@ -38,6 +38,9 @@ public partial class Home : ComponentBase
 
     private IReadOnlyList<ForecastOccurrenceRow> UpcomingForecastRows
         => BuildOccurrenceRows(_selectedPlan, UpcomingForecastOccurrences);
+
+    private DailyBalancePoint? TodayBalancePoint
+        => GetBalancePointForDate(_forecastResult?.DailyPoints ?? [], DateOnly.FromDateTime(DateTime.Today));
 
     private async Task LoadPlansAsync(Guid? preferredPlanId = null, bool resetForecastWindow = false)
     {
@@ -263,7 +266,7 @@ public partial class Home : ComponentBase
     }
 
     private void ResetForecastWindow(BudgetPlan plan)
-        => _forecastForm = ForecastFormModel.CreateDefault(plan.BalanceAsOfDate, durationDays: 365);
+        => _forecastForm = ForecastFormModel.CreateDefault(durationDays: 365);
 
     private void UpdateForecastChart()
     {
@@ -273,26 +276,16 @@ public partial class Home : ComponentBase
             return;
         }
 
-        _forecastChartSeries =
-        [
-            new ChartSeries<double>
-            {
-                Name = $"{_selectedPlan.Name} balance",
-                Data = _forecastResult.DailyPoints
-                    .Select(point => (double)point.EndOfDayBalance.Amount)
-                    .ToArray()
-            }
-        ];
-
+        _forecastChartSeries = BuildForecastChartSeries(_selectedPlan.Name, _forecastResult.DailyPoints);
         _forecastChartLabels = BuildForecastChartLabels(_forecastResult.DailyPoints);
-        _forecastChartOptions = CreateForecastChartOptions(_selectedPlan.Currency);
+        _forecastChartOptions = CreateDefaultForecastChartOptions(_selectedPlan.Currency);
     }
 
     private void ClearForecastChart()
     {
         _forecastChartSeries = [];
         _forecastChartLabels = [];
-        _forecastChartOptions = CreateForecastChartOptions(_selectedPlan?.Currency ?? "CAD");
+        _forecastChartOptions = CreateDefaultForecastChartOptions(_selectedPlan?.Currency ?? "CAD");
     }
 
     private static string[] BuildForecastChartLabels(IReadOnlyList<DailyBalancePoint> points)
@@ -318,7 +311,22 @@ public partial class Home : ComponentBase
         return labels;
     }
 
-    private static LineChartOptions CreateForecastChartOptions(string currency)
+    private static DailyBalancePoint? GetBalancePointForDate(IReadOnlyList<DailyBalancePoint> points, DateOnly date)
+        => points.FirstOrDefault(point => point.Date == date);
+
+    private static List<ChartSeries<double>> BuildForecastChartSeries(string planName, IReadOnlyList<DailyBalancePoint> points)
+        =>
+        [
+            new ChartSeries<double>
+            {
+                Name = $"{planName} balance",
+                Data = points
+                    .Select(point => (double)point.EndOfDayBalance.Amount)
+                    .ToArray()
+            }
+        ];
+
+    private static LineChartOptions CreateDefaultForecastChartOptions(string currency)
         => new()
         {
             ShowLegend = false,

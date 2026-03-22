@@ -7,10 +7,16 @@ public sealed class ForecastEngine : IForecastEngine
 {
     public ForecastResult Forecast(BudgetPlan plan, DateRange range)
     {
-        var occurrences = ExpandOccurrences(plan, range);
+        var expansionRange = plan.BalanceAsOfDate < range.Start
+            ? new DateRange(plan.BalanceAsOfDate, range.End)
+            : range;
+        var occurrences = ExpandOccurrences(plan, expansionRange);
+        var visibleOccurrences = occurrences
+            .Where(occurrence => occurrence.Date >= range.Start && occurrence.Date <= range.End)
+            .ToList();
 
         // Group to daily net amount
-        var dailyNet = occurrences
+        var dailyNet = visibleOccurrences
             .GroupBy(o => o.Date)
             .ToDictionary(
                 g => g.Key,
@@ -22,10 +28,8 @@ public sealed class ForecastEngine : IForecastEngine
 
         // Roll forward daily end-of-day balance
         var points = new List<DailyBalancePoint>();
-        var balance = plan.StartingBalance;
+        var balance = RollForwardToRangeStart(plan, occurrences, range.Start);
 
-        // If your BalanceAsOfDate is earlier than range.Start, you can still forecast fine,
-        // but most people will set it to "today" or "last reconciled day".
         var date = range.Start;
         while (date <= range.End)
         {
@@ -50,7 +54,26 @@ public sealed class ForecastEngine : IForecastEngine
                 maxPoint.EndOfDayBalance, maxPoint.Date,
                 firstBelow),
             belowDates,
-            occurrences);
+            visibleOccurrences);
+    }
+
+    private static Money RollForwardToRangeStart(BudgetPlan plan, IReadOnlyList<CashflowOccurrence> occurrences, DateOnly rangeStart)
+    {
+        var balance = plan.StartingBalance;
+
+        if (plan.BalanceAsOfDate >= rangeStart)
+        {
+            return balance;
+        }
+
+        foreach (var occurrence in occurrences.Where(occurrence => occurrence.Date >= plan.BalanceAsOfDate && occurrence.Date < rangeStart))
+        {
+            balance = occurrence.Direction == TransactionDirection.Inflow
+                ? new Money(balance.Amount + occurrence.Amount.Amount, plan.Currency)
+                : new Money(balance.Amount - occurrence.Amount.Amount, plan.Currency);
+        }
+
+        return balance;
     }
 
     private static IReadOnlyList<CashflowOccurrence> ExpandOccurrences(BudgetPlan plan, DateRange range)
