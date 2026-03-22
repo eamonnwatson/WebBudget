@@ -68,6 +68,7 @@ public sealed class BudgetPlanMapperTests
             new DateOnly(2026, 3, 21),
             OverrideAction.ReplaceAmount,
             newAmount: new Money(65m, "CAD")));
+        plan.SetCalendarSubscriptionToken("calendar-token");
 
         var document = BudgetPlanMapper.ToDocument(plan);
         var roundTripped = BudgetPlanMapper.ToDomain(document);
@@ -78,6 +79,7 @@ public sealed class BudgetPlanMapperTests
         Assert.Equal(3, roundTripped.RecurringRules.Count);
         Assert.Single(roundTripped.PlannedTransactions);
         Assert.Single(roundTripped.Overrides);
+        Assert.Equal("calendar-token", roundTripped.CalendarSubscriptionToken);
         Assert.Contains(roundTripped.RecurringRules, rule => rule.Recurrence is WeeklyRecurrence weekly && weekly.IntervalWeeks == 2);
         Assert.Contains(roundTripped.RecurringRules, rule => rule.Recurrence is MonthlyByDayOfMonthRecurrence monthly && monthly.DayOfMonth == 1);
         Assert.Contains(roundTripped.RecurringRules, rule => rule.Recurrence is YearlyByMonthsAndDayRecurrence yearly && yearly.Months.SetEquals([2, 9]));

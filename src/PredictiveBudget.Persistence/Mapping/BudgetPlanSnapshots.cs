@@ -14,6 +14,7 @@ internal sealed class BudgetPlanSnapshot
     public decimal StartingBalanceAmount { get; set; }
     public DateOnly BalanceAsOfDate { get; set; }
     public string TimeZoneId { get; set; } = string.Empty;
+    public string? CalendarSubscriptionToken { get; set; }
     public List<RecurringRuleSnapshot> RecurringRules { get; set; } = [];
     public List<PlannedTransactionSnapshot> PlannedTransactions { get; set; } = [];
     public List<OccurrenceOverrideSnapshot> Overrides { get; set; } = [];

@@ -95,9 +95,11 @@ public sealed class ForecastEngine : IForecastEngine
 
                 list.Add(new CashflowOccurrence(
                     d,
+                    d,
                     rule.Name,
                     rule.Direction,
                     rule.Amount,
+                    rule.DefaultAlertDaysBefore ?? 1,
                     OccurrenceSource.RecurringRule,
                     rule.RuleId));
             }
@@ -110,9 +112,11 @@ public sealed class ForecastEngine : IForecastEngine
 
             list.Add(new CashflowOccurrence(
                 txn.Date,
+                txn.Date,
                 txn.Name,
                 txn.Direction,
                 txn.Amount,
+                1,
                 OccurrenceSource.PlannedTransaction,
                 txn.TransactionId));
         }
@@ -129,7 +133,7 @@ public sealed class ForecastEngine : IForecastEngine
             var match = occurrences.FirstOrDefault(o =>
                 o.Source == ov.Source &&
                 o.SourceId == ov.SourceId &&
-                o.Date == ov.OriginalDate);
+                o.OriginalDate == ov.OriginalDate);
 
             if (match == default) continue;
 

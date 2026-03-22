@@ -194,6 +194,62 @@ public sealed class ForecastEngineTests
             });
     }
 
+    [Fact]
+    public void Forecast_PreservesOriginalDateAndAlertLeadTimeAcrossOverrides()
+    {
+        var plan = CreatePlan();
+        var recurringRuleId = Guid.NewGuid();
+        var plannedTransactionId = Guid.NewGuid();
+
+        plan.AddRecurringRule(new RecurringTransactionRule(
+            recurringRuleId,
+            plan.PlanId,
+            "Payday",
+            TransactionDirection.Inflow,
+            new Money(100m, "CAD"),
+            new DateOnly(2026, 3, 20),
+            null,
+            new WeeklyRecurrence(1, new HashSet<Weekday> { Weekday.Friday }),
+            defaultAlertDaysBefore: 2));
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            plannedTransactionId,
+            plan.PlanId,
+            new DateOnly(2026, 3, 21),
+            "Rent",
+            TransactionDirection.Outflow,
+            new Money(40m, "CAD")));
+        plan.AddOverride(new OccurrenceOverride(
+            Guid.NewGuid(),
+            plan.PlanId,
+            OccurrenceSource.RecurringRule,
+            recurringRuleId,
+            new DateOnly(2026, 3, 20),
+            OverrideAction.MoveToDate,
+            newDate: new DateOnly(2026, 3, 21)));
+        plan.AddOverride(new OccurrenceOverride(
+            Guid.NewGuid(),
+            plan.PlanId,
+            OccurrenceSource.RecurringRule,
+            recurringRuleId,
+            new DateOnly(2026, 3, 20),
+            OverrideAction.ReplaceName,
+            newName: "Payday moved"));
+
+        var engine = new ForecastEngine();
+
+        var result = engine.Forecast(plan, new DateRange(new DateOnly(2026, 3, 20), new DateOnly(2026, 3, 22)));
+
+        var movedRecurringOccurrence = Assert.Single(result.Occurrences, occurrence => occurrence.SourceId == recurringRuleId);
+        var plannedOccurrence = Assert.Single(result.Occurrences, occurrence => occurrence.SourceId == plannedTransactionId);
+
+        Assert.Equal(new DateOnly(2026, 3, 21), movedRecurringOccurrence.Date);
+        Assert.Equal(new DateOnly(2026, 3, 20), movedRecurringOccurrence.OriginalDate);
+        Assert.Equal("Payday moved", movedRecurringOccurrence.Name);
+        Assert.Equal(2, movedRecurringOccurrence.AlertDaysBefore);
+        Assert.Equal(plannedOccurrence.Date, plannedOccurrence.OriginalDate);
+        Assert.Equal(1, plannedOccurrence.AlertDaysBefore);
+    }
+
     private static BudgetPlan CreatePlan()
         => new(
             Guid.NewGuid(),

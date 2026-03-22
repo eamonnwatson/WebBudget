@@ -6,6 +6,7 @@ using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
 using PredictiveBudget.Web.Features.BudgetPlans.Models;
+using PredictiveBudget.Web.Services;
 
 namespace PredictiveBudget.Web.Features.BudgetPlans.Workspace;
 
@@ -15,6 +16,7 @@ namespace PredictiveBudget.Web.Features.BudgetPlans.Workspace;
 public partial class PlanDetails : ComponentBase
 {
     [Inject] private BudgetPlanService BudgetPlanService { get; set; } = default!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
     [Parameter] public Guid PlanId { get; set; }
@@ -73,6 +75,7 @@ public partial class PlanDetails : ComponentBase
 
             if (_plan is not null)
             {
+                _plan = await BudgetPlanService.EnsureCalendarSubscriptionTokenAsync(PlanId, CancellationToken.None);
                 // Keep the quick balance editor aligned with the latest persisted checkpoint.
                 _balanceForm = BalanceUpdateFormModel.CreateDefault(_plan.StartingBalance.Amount, _plan.BalanceAsOfDate);
             }
@@ -531,6 +534,22 @@ public partial class PlanDetails : ComponentBase
 
     private string OverrideModalTitle
         => _editingOverrideId.HasValue ? "Edit occurrence override" : "Add occurrence override";
+
+    private string? GetCalendarSubscriptionPath()
+        => _plan is not null && !string.IsNullOrWhiteSpace(_plan.CalendarSubscriptionToken)
+            ? CalendarSubscriptionService.BuildCalendarPath(_plan.PlanId, _plan.CalendarSubscriptionToken)
+            : null;
+
+    private string? GetCalendarSubscriptionUrl()
+    {
+        var relativePath = GetCalendarSubscriptionPath();
+        if (relativePath is null)
+        {
+            return null;
+        }
+
+        return new Uri(new Uri(NavigationManager.BaseUri), relativePath.TrimStart('/')).ToString();
+    }
 
     private void OpenDeleteConfirmation(DeleteTargetKind kind, Guid id, string title, string message)
     {

@@ -63,6 +63,37 @@ else
             </MudStack>
         </MudPaper>
 
+        <MudPaper Class="pa-5 panel-card">
+            <MudStack Spacing="3">
+                <div>
+                    <MudText Typo="Typo.h6">Subscription calendar</MudText>
+                    <MudText Typo="Typo.body2" Class="section-copy">
+                        Subscribe from iPhone to see forecasted transactions for the next 12 months with reminders.
+                    </MudText>
+                </div>
+
+                <MudTextField T="string"
+                              Label="Subscription URL"
+                              Variant="Variant.Outlined"
+                              Value="@(GetCalendarSubscriptionUrl() ?? string.Empty)"
+                              ReadOnly="true" />
+
+                <MudStack Row="true" Class="action-row">
+                    <MudButton Href="@GetCalendarSubscriptionUrl()"
+                               Target="_blank"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Event">
+                        Open calendar feed
+                    </MudButton>
+                </MudStack>
+
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                    On iPhone, open Calendar, choose Add Calendar, then Add Subscription Calendar and paste this URL.
+                </MudAlert>
+            </MudStack>
+        </MudPaper>
+
         <MudGrid>
             <MudItem xs="12" xl="6">
                 <MudPaper Class="pa-5 panel-card">

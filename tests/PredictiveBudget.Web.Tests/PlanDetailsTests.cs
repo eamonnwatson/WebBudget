@@ -32,6 +32,10 @@ public sealed class PlanDetailsTests
         Assert.NotNull(loadedPlan);
         Assert.Equal(125m, balanceForm.Amount);
         Assert.Equal(new DateTime(2026, 3, 20), balanceForm.BalanceAsOfDate);
+        Assert.False(string.IsNullOrWhiteSpace(loadedPlan.CalendarSubscriptionToken));
+        Assert.Equal(
+            $"http://localhost/subscriptions/plans/{loadedPlan.PlanId}/{loadedPlan.CalendarSubscriptionToken}.ics",
+            ReflectionTestHelper.InvokeInstance<string?>(component, "GetCalendarSubscriptionUrl"));
     }
 
     [Fact]
@@ -278,6 +282,7 @@ public sealed class PlanDetailsTests
         var component = new PlanDetails();
         ReflectionTestHelper.SetProperty(component, nameof(PlanDetails.PlanId), planId);
         ReflectionTestHelper.SetPrivateProperty(component, "BudgetPlanService", service);
+        ReflectionTestHelper.SetPrivateProperty(component, "NavigationManager", new TestNavigationManager());
         ReflectionTestHelper.SetPrivateProperty(component, "Snackbar", Substitute.For<ISnackbar>());
         return component;
     }

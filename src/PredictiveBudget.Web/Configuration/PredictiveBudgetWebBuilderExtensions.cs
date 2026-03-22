@@ -2,8 +2,8 @@ using MudBlazor.Services;
 using PredictiveBudget.Application.Common;
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.Forecasting;
-using PredictiveBudget.Persistence.DependencyInjection;
 using PredictiveBudget.Web.Services;
+using PredictiveBudget.Persistence.DependencyInjection;
 
 namespace PredictiveBudget.Web.Configuration;
 
@@ -22,6 +22,7 @@ internal static class PredictiveBudgetWebBuilderExtensions
         builder.Services.AddSingleton<IClock, SystemClock>();
         builder.Services.AddSingleton<IForecastEngine, ForecastEngine>();
         builder.Services.AddScoped<BudgetPlanService>();
+        builder.Services.AddScoped<CalendarSubscriptionService>();
 
         return builder;
     }

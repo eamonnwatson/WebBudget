@@ -7,3 +7,5 @@ builder.AddPredictiveBudgetWeb();
 var app = builder.Build();
 await app.ConfigurePredictiveBudgetWebAsync();
 app.Run();
+
+public partial class Program;

@@ -43,7 +43,8 @@ internal static class BudgetPlanMapper
             snapshot.Currency,
             new Money(snapshot.StartingBalanceAmount, snapshot.Currency),
             snapshot.BalanceAsOfDate,
-            snapshot.TimeZoneId);
+            snapshot.TimeZoneId,
+            snapshot.CalendarSubscriptionToken);
 
         foreach (var recurringRule in snapshot.RecurringRules)
         {
@@ -97,6 +98,7 @@ internal static class BudgetPlanMapper
             StartingBalanceAmount = plan.StartingBalance.Amount,
             BalanceAsOfDate = plan.BalanceAsOfDate,
             TimeZoneId = plan.TimeZoneId,
+            CalendarSubscriptionToken = plan.CalendarSubscriptionToken,
             RecurringRules = plan.RecurringRules.Select(ToSnapshot).ToList(),
             PlannedTransactions = plan.PlannedTransactions.Select(ToSnapshot).ToList(),
             Overrides = plan.Overrides.Select(ToSnapshot).ToList()

@@ -7,8 +7,10 @@ namespace PredictiveBudget.Domain.BudgetPlans;
 /// </summary>
 public sealed record CashflowOccurrence(
     DateOnly Date,
+    DateOnly OriginalDate,
     string Name,
     TransactionDirection Direction,
     Money Amount,
+    int AlertDaysBefore,
     OccurrenceSource Source,
     Guid SourceId);

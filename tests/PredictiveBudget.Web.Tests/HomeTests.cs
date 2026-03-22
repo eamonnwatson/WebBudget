@@ -199,8 +199,8 @@ public sealed class HomeTests
 
         var occurrences = new List<CashflowOccurrence>
         {
-            new(new DateOnly(2026, 3, 21), "Pay", TransactionDirection.Inflow, new Money(50m, "CAD"), OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
-            new(new DateOnly(2026, 3, 22), "Rent", TransactionDirection.Outflow, new Money(25m, "CAD"), OccurrenceSource.PlannedTransaction, Guid.NewGuid())
+            new(new DateOnly(2026, 3, 21), new DateOnly(2026, 3, 21), "Pay", TransactionDirection.Inflow, new Money(50m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
+            new(new DateOnly(2026, 3, 22), new DateOnly(2026, 3, 22), "Rent", TransactionDirection.Outflow, new Money(25m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid())
         };
 
         var balances = ReflectionTestHelper.InvokeStatic<IReadOnlyList<Money>>(typeof(Home), "BuildRunningBalances", plan, occurrences);

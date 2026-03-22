@@ -151,6 +151,36 @@ public sealed class BudgetPlanServiceTests
     }
 
     [Fact]
+    public async Task EnsureCalendarSubscriptionTokenAsync_GeneratesAndPersistsToken()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+
+        var updated = await service.EnsureCalendarSubscriptionTokenAsync(plan.PlanId, CancellationToken.None);
+
+        Assert.False(string.IsNullOrWhiteSpace(updated.CalendarSubscriptionToken));
+        Assert.Equal(updated.CalendarSubscriptionToken, context.Repository.Plans.Single().CalendarSubscriptionToken);
+    }
+
+    [Fact]
+    public async Task EnsureCalendarSubscriptionTokenAsync_ReusesExistingToken()
+    {
+        var context = new ApplicationTestContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+
+        var initial = await service.EnsureCalendarSubscriptionTokenAsync(plan.PlanId, CancellationToken.None);
+        var repeated = await service.EnsureCalendarSubscriptionTokenAsync(plan.PlanId, CancellationToken.None);
+
+        Assert.Equal(initial.CalendarSubscriptionToken, repeated.CalendarSubscriptionToken);
+    }
+
+    [Fact]
     public async Task AddRecurringRuleAsync_AddsWeeklyRuleToPlan()
     {
         var context = new ApplicationTestContext();

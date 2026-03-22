@@ -14,6 +14,7 @@ public sealed class BudgetPlan
     public Money StartingBalance { get; private set; }
     public DateOnly BalanceAsOfDate { get; private set; }
     public string TimeZoneId { get; private set; }
+    public string? CalendarSubscriptionToken { get; private set; }
 
     private readonly List<RecurringTransactionRule> _recurringRules = new();
     private readonly List<PlannedTransaction> _plannedTransactions = new();
@@ -23,7 +24,14 @@ public sealed class BudgetPlan
     public IReadOnlyList<PlannedTransaction> PlannedTransactions => _plannedTransactions;
     public IReadOnlyList<OccurrenceOverride> Overrides => _overrides;
 
-    public BudgetPlan(Guid planId, string name, string currency, Money startingBalance, DateOnly balanceAsOfDate, string timeZoneId)
+    public BudgetPlan(
+        Guid planId,
+        string name,
+        string currency,
+        Money startingBalance,
+        DateOnly balanceAsOfDate,
+        string timeZoneId,
+        string? calendarSubscriptionToken = null)
     {
         PlanId = planId;
         Name = name;
@@ -31,6 +39,9 @@ public sealed class BudgetPlan
         StartingBalance = startingBalance;
         BalanceAsOfDate = balanceAsOfDate;
         TimeZoneId = timeZoneId;
+        CalendarSubscriptionToken = string.IsNullOrWhiteSpace(calendarSubscriptionToken)
+            ? null
+            : calendarSubscriptionToken.Trim();
     }
 
     public void SetStartingBalance(Money balance, DateOnly asOfDate)
@@ -38,6 +49,14 @@ public sealed class BudgetPlan
         if (balance.Currency != Currency) throw new InvalidOperationException("Currency mismatch.");
         StartingBalance = balance;
         BalanceAsOfDate = asOfDate;
+    }
+
+    public void SetCalendarSubscriptionToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new InvalidOperationException("Calendar subscription token is required.");
+
+        CalendarSubscriptionToken = token.Trim();
     }
 
     public void AddRecurringRule(RecurringTransactionRule rule)

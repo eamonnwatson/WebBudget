@@ -54,6 +54,19 @@ public sealed class BudgetPlanService(
         await repository.DeleteAsync(planId, ct);
     }
 
+    public async Task<BudgetPlan> EnsureCalendarSubscriptionTokenAsync(Guid planId, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+        if (!string.IsNullOrWhiteSpace(plan.CalendarSubscriptionToken))
+        {
+            return plan;
+        }
+
+        plan.SetCalendarSubscriptionToken(Guid.NewGuid().ToString("N"));
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
     public async Task<BudgetPlan> AddRecurringRuleAsync(Guid planId, AddRecurringRuleRequest request, CancellationToken ct)
     {
         var plan = await RequirePlanAsync(planId, ct);

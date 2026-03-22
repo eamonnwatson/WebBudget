@@ -1,5 +1,7 @@
+using System.Text;
 using PredictiveBudget.Persistence.DependencyInjection;
 using PredictiveBudget.Web.Components;
+using PredictiveBudget.Web.Services;
 
 namespace PredictiveBudget.Web.Configuration;
 
@@ -19,6 +21,16 @@ internal static class PredictiveBudgetWebApplicationExtensions
         app.UseAntiforgery();
 
         app.MapStaticAssets();
+        app.MapGet(
+            "/subscriptions/plans/{planId:guid}/{token}.ics",
+            async Task<IResult> (Guid planId, string token, CalendarSubscriptionService calendarSubscriptionService, CancellationToken ct) =>
+            {
+                var calendar = await calendarSubscriptionService.BuildCalendarAsync(planId, token, ct);
+                return calendar is null
+                    ? Results.NotFound()
+                    : Results.Text(calendar, "text/calendar", Encoding.UTF8);
+            });
+
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
