@@ -1,24 +1,15 @@
-.hero-panel {
-    background:
-        radial-gradient(circle at top right, rgba(13, 202, 240, 0.18), transparent 24%),
-        linear-gradient(135deg, #212529 0%, #2b3035 64%, #0d6efd 100%);
-    color: #f8f9fa;
-    overflow: hidden;
+.page-header {
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.section-kicker {
-    color: rgba(248, 249, 250, 0.72);
+.page-toolbar {
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
-.hero-copy {
-    max-width: 48rem;
-    color: rgba(248, 249, 250, 0.84);
-}
-
-.stat-tile {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f8f9fa;
+.plan-switcher {
+    min-width: 13rem;
 }
 
 .panel-card {
@@ -38,17 +29,10 @@
     justify-content: center;
 }
 
-.selector-card,
-.selected-plan-card,
 .summary-card,
-.recurrence-panel,
 .modal-card {
     background: rgba(52, 58, 64, 0.94);
     border: 1px solid rgba(13, 110, 253, 0.18);
-}
-
-.selected-plan-card {
-    border-color: rgba(13, 110, 253, 0.28);
 }
 
 .action-row,
@@ -57,25 +41,54 @@
     flex-wrap: wrap;
 }
 
-.forecast-header {
+.forecast-header,
+.forecast-form,
+.section-header {
     gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.forecast-form {
-    gap: 0.75rem;
     flex-wrap: wrap;
     align-items: center;
 }
 
-.actions-cell {
-    width: 3rem;
-    text-align: right;
+.section-header {
+    justify-content: space-between;
 }
 
-.create-button-cell {
+.chart-shell {
+    width: 100%;
     display: flex;
+    justify-content: center;
+}
+
+.forecast-chart {
+    width: min(100%, 68rem);
+    margin-inline: auto;
+}
+
+.chart-card :deep(.mud-chart) {
+    width: 100%;
+}
+
+.compact-balance-grid {
     align-items: end;
+}
+
+.compact-balance-actions {
+    display: flex;
+    align-items: stretch;
+}
+
+.compact-balance-actions :deep(.mud-button-root) {
+    width: 100%;
+}
+
+.amount-positive {
+    color: var(--mud-palette-success);
+    font-weight: 600;
+}
+
+.amount-negative {
+    color: var(--mud-palette-error);
+    font-weight: 600;
 }
 
 .modal-backdrop {
@@ -101,19 +114,13 @@
 }
 
 @media (max-width: 959.98px) {
-    .forecast-form {
-        width: 100%;
-    }
-
+    .plan-switcher,
+    .forecast-form,
     .forecast-form > * {
         width: 100%;
     }
 
-    .create-button-cell {
-        align-items: stretch;
-    }
-
-    .create-button-cell :deep(button) {
-        width: 100%;
+    .compact-balance-actions {
+        display: block;
     }
 }

@@ -100,6 +100,28 @@ public sealed class ForecastEngineTests
         Assert.Equal(new DateOnly(2026, 3, 24), result.Summary.MinDate);
         Assert.Equal(new Money(200m, "CAD"), result.Summary.MaxBalance);
         Assert.Null(result.Summary.FirstBelowZeroDate);
+        Assert.Collection(
+            result.Occurrences,
+            occurrence =>
+            {
+                Assert.Equal(new DateOnly(2026, 3, 20), occurrence.Date);
+                Assert.Equal("Salary", occurrence.Name);
+                Assert.Equal(TransactionDirection.Inflow, occurrence.Direction);
+            },
+            occurrence =>
+            {
+                Assert.Equal(new DateOnly(2026, 3, 21), occurrence.Date);
+                Assert.Equal("Rent adjusted", occurrence.Name);
+                Assert.Equal(TransactionDirection.Outflow, occurrence.Direction);
+                Assert.Equal(55m, occurrence.Amount.Amount);
+            },
+            occurrence =>
+            {
+                Assert.Equal(new DateOnly(2026, 3, 24), occurrence.Date);
+                Assert.Equal("Moved rent", occurrence.Name);
+                Assert.Equal(TransactionDirection.Outflow, occurrence.Direction);
+                Assert.Equal(70m, occurrence.Amount.Amount);
+            });
     }
 
     [Fact]

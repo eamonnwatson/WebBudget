@@ -49,7 +49,8 @@ public sealed class ForecastEngine : IForecastEngine
                 minPoint.EndOfDayBalance, minPoint.Date,
                 maxPoint.EndOfDayBalance, maxPoint.Date,
                 firstBelow),
-            belowDates);
+            belowDates,
+            occurrences);
     }
 
     private static IReadOnlyList<CashflowOccurrence> ExpandOccurrences(BudgetPlan plan, DateRange range)

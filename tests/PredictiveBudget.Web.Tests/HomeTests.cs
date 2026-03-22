@@ -96,6 +96,28 @@ public sealed class HomeTests
     }
 
     [Fact]
+    public void OpenCreatePlanModal_ResetsFormAndShowsCreateModal()
+    {
+        var component = CreateComponent(new WebBudgetPlanContext().CreateService());
+        ReflectionTestHelper.SetPrivateField(component, "_createForm", new CreateBudgetPlanFormModel
+        {
+            Name = "Existing",
+            Currency = "USD",
+            StartingBalance = 99m,
+            BalanceAsOfDate = new DateTime(2026, 3, 22),
+            TimeZoneId = "America/New_York"
+        });
+
+        ReflectionTestHelper.InvokeVoid(component, "OpenCreatePlanModal");
+
+        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_createForm");
+
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showCreatePlanModal"));
+        Assert.Equal("CAD", resetForm.Currency);
+        Assert.Equal(string.Empty, resetForm.Name);
+    }
+
+    [Fact]
     public void HelperMethods_FormatValuesForDisplay()
     {
         Assert.Equal(

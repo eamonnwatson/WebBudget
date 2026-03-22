@@ -1,9 +1,7 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans;
-using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
 using PredictiveBudget.Domain.Forecasting;
 using PredictiveBudget.Web.Components.Pages.Models;
@@ -15,44 +13,25 @@ public partial class Home : ComponentBase
     [Inject] private BudgetPlanService BudgetPlanService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
-    private static readonly Weekday[] WeekdayOptions =
-    [
-        Weekday.Monday,
-        Weekday.Tuesday,
-        Weekday.Wednesday,
-        Weekday.Thursday,
-        Weekday.Friday,
-        Weekday.Saturday,
-        Weekday.Sunday
-    ];
-
-    private static readonly (int Number, string Label)[] MonthOptions =
-        Enumerable.Range(1, 12)
-            .Select(month => (month, CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month)))
-            .ToArray();
-
     private readonly List<BudgetPlan> _plans = [];
+    private List<ChartSeries<double>> _forecastChartSeries = [];
+    private string[] _forecastChartLabels = [];
+    private LineChartOptions _forecastChartOptions = CreateForecastChartOptions("CAD");
     private CreateBudgetPlanFormModel _createForm = CreateBudgetPlanFormModel.CreateDefault();
     private BalanceUpdateFormModel _balanceForm = BalanceUpdateFormModel.CreateDefault(0m, DateOnly.FromDateTime(DateTime.Today));
-    private RecurringRuleFormModel _recurringRuleForm = RecurringRuleFormModel.CreateDefault();
-    private PlannedTransactionFormModel _plannedTransactionForm = PlannedTransactionFormModel.CreateDefault();
-    private OccurrenceOverrideFormModel _overrideForm = OccurrenceOverrideFormModel.CreateDefault();
     private ForecastFormModel _forecastForm = ForecastFormModel.CreateDefault();
 
     private BudgetPlan? _selectedPlan;
     private ForecastResult? _forecastResult;
     private Guid? _selectedPlanId;
-    private Guid? _editingRecurringRuleId;
-    private Guid? _editingPlannedTransactionId;
-    private Guid? _editingOverrideId;
     private bool _isLoading = true;
-    private bool _showBalanceModal;
-    private bool _showRecurringRuleModal;
-    private bool _showPlannedTransactionModal;
-    private bool _showOverrideModal;
+    private bool _showCreatePlanModal;
 
     protected override async Task OnInitializedAsync()
         => await LoadPlansAsync(resetForecastWindow: true);
+
+    private IReadOnlyList<CashflowOccurrence> UpcomingForecastOccurrences
+        => _forecastResult?.Occurrences ?? [];
 
     private async Task LoadPlansAsync(Guid? preferredPlanId = null, bool resetForecastWindow = false)
     {
@@ -70,6 +49,7 @@ public partial class Home : ComponentBase
                 _selectedPlan = null;
                 _selectedPlanId = null;
                 _forecastResult = null;
+                ClearForecastChart();
                 CloseAllModals();
                 return;
             }
@@ -102,6 +82,13 @@ public partial class Home : ComponentBase
     private async Task ChangeSelectedPlanAsync(Guid planId)
         => await LoadPlansAsync(planId, resetForecastWindow: true);
 
+    private void OpenCreatePlanModal()
+    {
+        CloseAllModals();
+        _createForm = CreateBudgetPlanFormModel.CreateDefault();
+        _showCreatePlanModal = true;
+    }
+
     private async Task CreatePlanAsync()
     {
         var plan = await BudgetPlanService.CreateAsync(
@@ -113,21 +100,10 @@ public partial class Home : ComponentBase
                 _createForm.TimeZoneId),
             CancellationToken.None);
 
+        CloseAllModals();
         Snackbar.Add($"Created plan '{plan.Name}'.", Severity.Success);
         _createForm = CreateBudgetPlanFormModel.CreateDefault();
         await LoadPlansAsync(plan.PlanId, resetForecastWindow: true);
-    }
-
-    private void OpenBalanceModal()
-    {
-        if (_selectedPlan is null)
-        {
-            return;
-        }
-
-        CloseAllModals();
-        _balanceForm = BalanceUpdateFormModel.CreateDefault(_selectedPlan.StartingBalance.Amount, _selectedPlan.BalanceAsOfDate);
-        _showBalanceModal = true;
     }
 
     private async Task SaveBalanceAsync()
@@ -144,255 +120,8 @@ public partial class Home : ComponentBase
                 ToDateOnly(_balanceForm.BalanceAsOfDate)),
             CancellationToken.None);
 
-        CloseAllModals();
         Snackbar.Add("Balance checkpoint updated.", Severity.Success);
-        await LoadPlansAsync(updatedPlan.PlanId, resetForecastWindow: true);
-    }
-
-    private void OpenAddRecurringRuleModal()
-    {
-        CloseAllModals();
-        _editingRecurringRuleId = null;
-        _recurringRuleForm = CreateRecurringRuleForm();
-        _showRecurringRuleModal = true;
-    }
-
-    private void OpenEditRecurringRuleModal(Guid ruleId)
-    {
-        if (_selectedPlan is null)
-        {
-            return;
-        }
-
-        var rule = _selectedPlan.RecurringRules.FirstOrDefault(candidate => candidate.RuleId == ruleId);
-        if (rule is null)
-        {
-            return;
-        }
-
-        CloseAllModals();
-        _editingRecurringRuleId = rule.RuleId;
-        _recurringRuleForm = CreateRecurringRuleForm(rule);
-        _showRecurringRuleModal = true;
-    }
-
-    private async Task SaveRecurringRuleAsync()
-    {
-        if (_selectedPlan is null)
-        {
-            return;
-        }
-
-        if (_editingRecurringRuleId.HasValue)
-        {
-            await BudgetPlanService.UpdateRecurringRuleAsync(
-                _selectedPlan.PlanId,
-                _editingRecurringRuleId.Value,
-                new UpdateRecurringRuleRequest(
-                    _recurringRuleForm.Name,
-                    _recurringRuleForm.Direction,
-                    _recurringRuleForm.Amount ?? 0m,
-                    ToDateOnly(_recurringRuleForm.EffectiveStartDate),
-                    _recurringRuleForm.EffectiveEndDate is null ? null : ToDateOnly(_recurringRuleForm.EffectiveEndDate),
-                    _recurringRuleForm.Pattern,
-                    _recurringRuleForm.IntervalWeeks ?? 1,
-                    _recurringRuleForm.SelectedWeekdays.ToArray(),
-                    _recurringRuleForm.IntervalMonths ?? 1,
-                    _recurringRuleForm.SelectedMonths.ToArray(),
-                    _recurringRuleForm.DayOfMonth ?? 1,
-                    _recurringRuleForm.BusinessDayAdjustment,
-                    _recurringRuleForm.IsActive,
-                    _recurringRuleForm.DefaultAlertDaysBefore),
-                CancellationToken.None);
-
-            Snackbar.Add("Recurring rule updated.", Severity.Success);
-        }
-        else
-        {
-            await BudgetPlanService.AddRecurringRuleAsync(
-                _selectedPlan.PlanId,
-                new AddRecurringRuleRequest(
-                    _recurringRuleForm.Name,
-                    _recurringRuleForm.Direction,
-                    _recurringRuleForm.Amount ?? 0m,
-                    ToDateOnly(_recurringRuleForm.EffectiveStartDate),
-                    _recurringRuleForm.EffectiveEndDate is null ? null : ToDateOnly(_recurringRuleForm.EffectiveEndDate),
-                    _recurringRuleForm.Pattern,
-                    _recurringRuleForm.IntervalWeeks ?? 1,
-                    _recurringRuleForm.SelectedWeekdays.ToArray(),
-                    _recurringRuleForm.IntervalMonths ?? 1,
-                    _recurringRuleForm.SelectedMonths.ToArray(),
-                    _recurringRuleForm.DayOfMonth ?? 1,
-                    _recurringRuleForm.BusinessDayAdjustment,
-                    _recurringRuleForm.IsActive,
-                    _recurringRuleForm.DefaultAlertDaysBefore),
-                CancellationToken.None);
-
-            Snackbar.Add("Recurring rule added.", Severity.Success);
-        }
-
-        CloseAllModals();
-        await LoadPlansAsync(_selectedPlan.PlanId, resetForecastWindow: false);
-    }
-
-    private void OpenAddPlannedTransactionModal()
-    {
-        CloseAllModals();
-        _editingPlannedTransactionId = null;
-        _plannedTransactionForm = CreatePlannedTransactionForm();
-        _showPlannedTransactionModal = true;
-    }
-
-    private void OpenEditPlannedTransactionModal(Guid transactionId)
-    {
-        if (_selectedPlan is null)
-        {
-            return;
-        }
-
-        var transaction = _selectedPlan.PlannedTransactions.FirstOrDefault(candidate => candidate.TransactionId == transactionId);
-        if (transaction is null)
-        {
-            return;
-        }
-
-        CloseAllModals();
-        _editingPlannedTransactionId = transaction.TransactionId;
-        _plannedTransactionForm = new PlannedTransactionFormModel
-        {
-            Date = transaction.Date.ToDateTime(TimeOnly.MinValue),
-            Name = transaction.Name,
-            Direction = transaction.Direction,
-            Amount = transaction.Amount.Amount
-        };
-        _showPlannedTransactionModal = true;
-    }
-
-    private async Task SavePlannedTransactionAsync()
-    {
-        if (_selectedPlan is null)
-        {
-            return;
-        }
-
-        if (_editingPlannedTransactionId.HasValue)
-        {
-            await BudgetPlanService.UpdatePlannedTransactionAsync(
-                _selectedPlan.PlanId,
-                _editingPlannedTransactionId.Value,
-                new UpdatePlannedTransactionRequest(
-                    ToDateOnly(_plannedTransactionForm.Date),
-                    _plannedTransactionForm.Name,
-                    _plannedTransactionForm.Direction,
-                    _plannedTransactionForm.Amount ?? 0m),
-                CancellationToken.None);
-
-            Snackbar.Add("Planned transaction updated.", Severity.Success);
-        }
-        else
-        {
-            await BudgetPlanService.AddPlannedTransactionAsync(
-                _selectedPlan.PlanId,
-                new AddPlannedTransactionRequest(
-                    ToDateOnly(_plannedTransactionForm.Date),
-                    _plannedTransactionForm.Name,
-                    _plannedTransactionForm.Direction,
-                    _plannedTransactionForm.Amount ?? 0m),
-                CancellationToken.None);
-
-            Snackbar.Add("Planned transaction added.", Severity.Success);
-        }
-
-        CloseAllModals();
-        await LoadPlansAsync(_selectedPlan.PlanId, resetForecastWindow: false);
-    }
-
-    private void OpenAddOverrideModal()
-    {
-        if (!CanEditOverrides)
-        {
-            return;
-        }
-
-        CloseAllModals();
-        _editingOverrideId = null;
-        _overrideForm = CreateOverrideForm();
-        SyncOverrideSourceSelection();
-        _showOverrideModal = true;
-    }
-
-    private void OpenEditOverrideModal(Guid overrideId)
-    {
-        if (_selectedPlan is null)
-        {
-            return;
-        }
-
-        var overrideEntry = _selectedPlan.Overrides.FirstOrDefault(candidate => candidate.OverrideId == overrideId);
-        if (overrideEntry is null)
-        {
-            return;
-        }
-
-        CloseAllModals();
-        _editingOverrideId = overrideEntry.OverrideId;
-        _overrideForm = new OccurrenceOverrideFormModel
-        {
-            Source = overrideEntry.Source,
-            SourceId = overrideEntry.SourceId.ToString(),
-            OriginalDate = overrideEntry.OriginalDate.ToDateTime(TimeOnly.MinValue),
-            Action = overrideEntry.Action,
-            NewDate = overrideEntry.NewDate?.ToDateTime(TimeOnly.MinValue),
-            NewAmount = overrideEntry.NewAmount?.Amount,
-            NewName = overrideEntry.NewName
-        };
-        SyncOverrideSourceSelection();
-        _showOverrideModal = true;
-    }
-
-    private async Task SaveOverrideAsync()
-    {
-        if (_selectedPlan is null)
-        {
-            return;
-        }
-
-        if (_editingOverrideId.HasValue)
-        {
-            await BudgetPlanService.UpdateOverrideAsync(
-                _selectedPlan.PlanId,
-                _editingOverrideId.Value,
-                new UpdateOccurrenceOverrideRequest(
-                    _overrideForm.Source,
-                    Guid.Parse(_overrideForm.SourceId),
-                    ToDateOnly(_overrideForm.OriginalDate),
-                    _overrideForm.Action,
-                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
-                    _overrideForm.NewAmount,
-                    _overrideForm.NewName),
-                CancellationToken.None);
-
-            Snackbar.Add("Occurrence override updated.", Severity.Success);
-        }
-        else
-        {
-            await BudgetPlanService.AddOverrideAsync(
-                _selectedPlan.PlanId,
-                new AddOccurrenceOverrideRequest(
-                    _overrideForm.Source,
-                    Guid.Parse(_overrideForm.SourceId),
-                    ToDateOnly(_overrideForm.OriginalDate),
-                    _overrideForm.Action,
-                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
-                    _overrideForm.NewAmount,
-                    _overrideForm.NewName),
-                CancellationToken.None);
-
-            Snackbar.Add("Occurrence override added.", Severity.Success);
-        }
-
-        CloseAllModals();
-        await LoadPlansAsync(_selectedPlan.PlanId, resetForecastWindow: false);
+        await LoadPlansAsync(updatedPlan.PlanId, resetForecastWindow: false);
     }
 
     private async Task RunForecastAsync()
@@ -403,6 +132,7 @@ public partial class Home : ComponentBase
         if (_selectedPlan is null)
         {
             _forecastResult = null;
+            ClearForecastChart();
             return;
         }
 
@@ -413,108 +143,13 @@ public partial class Home : ComponentBase
                 ToDateOnly(_forecastForm.EndDate)),
             CancellationToken.None);
 
+        UpdateForecastChart();
+
         if (showSnackbar)
         {
             Snackbar.Add("Forecast calculated.", Severity.Success);
         }
     }
-
-    private void OnOverrideSourceChanged(OccurrenceSource source)
-    {
-        _overrideForm.Source = source;
-        SyncOverrideSourceSelection();
-    }
-
-    private bool IsWeekdaySelected(Weekday weekday)
-        => _recurringRuleForm.SelectedWeekdays.Contains(weekday);
-
-    private void SetWeekday(Weekday weekday, bool isSelected)
-    {
-        if (isSelected)
-        {
-            _recurringRuleForm.SelectedWeekdays.Add(weekday);
-        }
-        else
-        {
-            _recurringRuleForm.SelectedWeekdays.Remove(weekday);
-        }
-    }
-
-    private bool IsMonthSelected(int month)
-        => _recurringRuleForm.SelectedMonths.Contains(month);
-
-    private void SetMonth(int month, bool isSelected)
-    {
-        if (isSelected)
-        {
-            _recurringRuleForm.SelectedMonths.Add(month);
-        }
-        else
-        {
-            _recurringRuleForm.SelectedMonths.Remove(month);
-        }
-    }
-
-    private IReadOnlyList<SourceOption> GetSourceOptions(OccurrenceSource source)
-    {
-        if (_selectedPlan is null)
-        {
-            return [];
-        }
-
-        return source switch
-        {
-            OccurrenceSource.RecurringRule => _selectedPlan.RecurringRules
-                .OrderBy(rule => rule.Name)
-                .Select(rule => new SourceOption(rule.RuleId.ToString(), rule.Name))
-                .ToList(),
-            OccurrenceSource.PlannedTransaction => _selectedPlan.PlannedTransactions
-                .OrderBy(transaction => transaction.Date)
-                .ThenBy(transaction => transaction.Name)
-                .Select(transaction => new SourceOption(transaction.TransactionId.ToString(), transaction.Name))
-                .ToList(),
-            _ => []
-        };
-    }
-
-    private string GetOverrideSourceLabel(OccurrenceOverride overrideEntry)
-    {
-        if (_selectedPlan is null)
-        {
-            return overrideEntry.Source.ToString();
-        }
-
-        return overrideEntry.Source switch
-        {
-            OccurrenceSource.RecurringRule => _selectedPlan.RecurringRules.FirstOrDefault(rule => rule.RuleId == overrideEntry.SourceId)?.Name ?? overrideEntry.SourceId.ToString(),
-            OccurrenceSource.PlannedTransaction => _selectedPlan.PlannedTransactions.FirstOrDefault(transaction => transaction.TransactionId == overrideEntry.SourceId)?.Name ?? overrideEntry.SourceId.ToString(),
-            _ => overrideEntry.SourceId.ToString()
-        };
-    }
-
-    private static string DescribeEffectiveWindow(RecurringTransactionRule rule)
-        => rule.EffectiveEndDate is null
-            ? $"{FormatDate(rule.EffectiveStartDate)} onward"
-            : $"{FormatDate(rule.EffectiveStartDate)} to {FormatDate(rule.EffectiveEndDate.Value)}";
-
-    private static string DescribeRecurrence(RecurrenceRule recurrence)
-        => recurrence switch
-        {
-            WeeklyRecurrence weekly => $"Every {weekly.IntervalWeeks} week(s) on {string.Join(", ", weekly.Weekdays.OrderBy(day => day))}",
-            MonthlyByDayOfMonthRecurrence monthly => $"Every {monthly.IntervalMonths} month(s) on day {monthly.DayOfMonth}",
-            YearlyByMonthsAndDayRecurrence yearly => $"Yearly on {string.Join(", ", yearly.Months.OrderBy(month => month).Select(month => CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month)))} day {yearly.DayOfMonth}",
-            _ => recurrence.GetType().Name
-        };
-
-    private static string DescribeOverride(OccurrenceOverride overrideEntry)
-        => overrideEntry.Action switch
-        {
-            OverrideAction.Skip => "Skip this occurrence",
-            OverrideAction.MoveToDate when overrideEntry.NewDate.HasValue => $"Move to {FormatDate(overrideEntry.NewDate.Value)}",
-            OverrideAction.ReplaceAmount when overrideEntry.NewAmount.HasValue => $"Use {FormatMoney(overrideEntry.NewAmount.Value)}",
-            OverrideAction.ReplaceName when !string.IsNullOrWhiteSpace(overrideEntry.NewName) => $"Rename to {overrideEntry.NewName}",
-            _ => overrideEntry.Action.ToString()
-        };
 
     private static string FormatMoney(Money money)
         => $"{money.Amount:N2} {money.Currency}";
@@ -531,123 +166,86 @@ public partial class Home : ComponentBase
     private static DateOnly ToDateOnly(DateTime? value)
         => DateOnly.FromDateTime(value ?? DateTime.Today);
 
-    private bool CanEditOverrides
-        => _selectedPlan is not null
-           && (_selectedPlan.RecurringRules.Count > 0 || _selectedPlan.PlannedTransactions.Count > 0);
+    private static string GetOccurrenceSourceLabel(CashflowOccurrence occurrence)
+        => occurrence.Source switch
+        {
+            OccurrenceSource.RecurringRule => "Recurring rule",
+            OccurrenceSource.PlannedTransaction => "Planned transaction",
+            _ => occurrence.Source.ToString()
+        };
 
-    private string RecurringRuleModalTitle
-        => _editingRecurringRuleId.HasValue ? "Edit recurring rule" : "Add recurring rule";
-
-    private string PlannedTransactionModalTitle
-        => _editingPlannedTransactionId.HasValue ? "Edit planned transaction" : "Add planned transaction";
-
-    private string OverrideModalTitle
-        => _editingOverrideId.HasValue ? "Edit occurrence override" : "Add occurrence override";
+    private static string GetAmountClass(TransactionDirection direction)
+        => direction == TransactionDirection.Outflow ? "amount-negative" : "amount-positive";
 
     private void CloseAllModals()
-    {
-        _showBalanceModal = false;
-        _showRecurringRuleModal = false;
-        _showPlannedTransactionModal = false;
-        _showOverrideModal = false;
-        _editingRecurringRuleId = null;
-        _editingPlannedTransactionId = null;
-        _editingOverrideId = null;
-    }
+        => _showCreatePlanModal = false;
 
     private void ResetForecastWindow(BudgetPlan plan)
         => _forecastForm = ForecastFormModel.CreateDefault(plan.BalanceAsOfDate, durationDays: 365);
 
-    private RecurringRuleFormModel CreateRecurringRuleForm(RecurringTransactionRule? rule = null)
+    private void UpdateForecastChart()
     {
-        if (rule is null)
+        if (_forecastResult is null || _forecastResult.DailyPoints.Count == 0 || _selectedPlan is null)
         {
-            var form = RecurringRuleFormModel.CreateDefault();
-            if (_selectedPlan is not null)
-            {
-                form.EffectiveStartDate = _selectedPlan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue);
-            }
-
-            return form;
-        }
-
-        var recurringRuleForm = new RecurringRuleFormModel
-        {
-            Name = rule.Name,
-            Direction = rule.Direction,
-            Amount = rule.Amount.Amount,
-            EffectiveStartDate = rule.EffectiveStartDate.ToDateTime(TimeOnly.MinValue),
-            EffectiveEndDate = rule.EffectiveEndDate?.ToDateTime(TimeOnly.MinValue),
-            BusinessDayAdjustment = rule.Recurrence.BusinessDayAdjustment,
-            IsActive = rule.IsActive,
-            DefaultAlertDaysBefore = rule.DefaultAlertDaysBefore
-        };
-
-        recurringRuleForm.SelectedWeekdays.Clear();
-        recurringRuleForm.SelectedMonths.Clear();
-
-        switch (rule.Recurrence)
-        {
-            case WeeklyRecurrence weekly:
-                recurringRuleForm.Pattern = RecurrencePattern.Weekly;
-                recurringRuleForm.IntervalWeeks = weekly.IntervalWeeks;
-                foreach (var weekday in weekly.Weekdays)
-                {
-                    recurringRuleForm.SelectedWeekdays.Add(weekday);
-                }
-                break;
-            case MonthlyByDayOfMonthRecurrence monthly:
-                recurringRuleForm.Pattern = RecurrencePattern.MonthlyByDayOfMonth;
-                recurringRuleForm.IntervalMonths = monthly.IntervalMonths;
-                recurringRuleForm.DayOfMonth = monthly.DayOfMonth;
-                break;
-            case YearlyByMonthsAndDayRecurrence yearly:
-                recurringRuleForm.Pattern = RecurrencePattern.YearlyByMonthsAndDay;
-                recurringRuleForm.DayOfMonth = yearly.DayOfMonth;
-                foreach (var month in yearly.Months)
-                {
-                    recurringRuleForm.SelectedMonths.Add(month);
-                }
-                break;
-        }
-
-        return recurringRuleForm;
-    }
-
-    private PlannedTransactionFormModel CreatePlannedTransactionForm()
-    {
-        var form = PlannedTransactionFormModel.CreateDefault();
-        if (_selectedPlan is not null)
-        {
-            form.Date = _selectedPlan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue);
-        }
-
-        return form;
-    }
-
-    private OccurrenceOverrideFormModel CreateOverrideForm()
-    {
-        var form = OccurrenceOverrideFormModel.CreateDefault();
-        if (_selectedPlan is not null)
-        {
-            form.OriginalDate = _selectedPlan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue);
-        }
-
-        return form;
-    }
-
-    private void SyncOverrideSourceSelection()
-    {
-        var options = GetSourceOptions(_overrideForm.Source);
-        if (options.Count == 0)
-        {
-            _overrideForm.SourceId = string.Empty;
+            ClearForecastChart();
             return;
         }
 
-        if (options.All(option => option.Id != _overrideForm.SourceId))
-        {
-            _overrideForm.SourceId = options[0].Id;
-        }
+        _forecastChartSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = $"{_selectedPlan.Name} balance",
+                Data = _forecastResult.DailyPoints
+                    .Select(point => (double)point.EndOfDayBalance.Amount)
+                    .ToArray()
+            }
+        ];
+
+        _forecastChartLabels = BuildForecastChartLabels(_forecastResult.DailyPoints);
+        _forecastChartOptions = CreateForecastChartOptions(_selectedPlan.Currency);
     }
+
+    private void ClearForecastChart()
+    {
+        _forecastChartSeries = [];
+        _forecastChartLabels = [];
+        _forecastChartOptions = CreateForecastChartOptions(_selectedPlan?.Currency ?? "CAD");
+    }
+
+    private static string[] BuildForecastChartLabels(IReadOnlyList<DailyBalancePoint> points)
+    {
+        if (points.Count == 0)
+        {
+            return [];
+        }
+
+        var labels = new string[points.Count];
+
+        for (int index = 0; index < points.Count; index++)
+        {
+            bool isFirst = index == 0;
+            bool isLast = index == points.Count - 1;
+            bool isMonthBoundary = index > 0 && points[index].Date.Month != points[index - 1].Date.Month;
+
+            labels[index] = isFirst || isLast || isMonthBoundary
+                ? points[index].Date.ToString("MMM d")
+                : string.Empty;
+        }
+
+        return labels;
+    }
+
+    private static LineChartOptions CreateForecastChartOptions(string currency)
+        => new()
+        {
+            ShowLegend = false,
+            ShowDataMarkers = false,
+            LineStrokeWidth = 3,
+            YAxisRequireZeroPoint = false,
+            YAxisToStringFunc = value => FormatChartAxisValue(value, currency)
+        };
+
+    private static string FormatChartAxisValue(double value, string currency)
+        => $"{value:N0} {currency}";
 }
