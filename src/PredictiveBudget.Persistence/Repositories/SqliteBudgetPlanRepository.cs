@@ -1,18 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using PredictiveBudget.Application.Common;
 using PredictiveBudget.Domain.BudgetPlans;
+using PredictiveBudget.Persistence.Database;
+using PredictiveBudget.Persistence.Documents;
+using PredictiveBudget.Persistence.Mapping;
 
-namespace PredictiveBudget.Persistence;
+namespace PredictiveBudget.Persistence.Repositories;
 
-public sealed class SqliteBudgetPlanRepository : IBudgetPlanRepository
+public sealed class SqliteBudgetPlanRepository(IDbContextFactory<BudgetDbContext> dbContextFactory) : IBudgetPlanRepository
 {
-    private readonly IDbContextFactory<BudgetDbContext> dbContextFactory;
-
-    public SqliteBudgetPlanRepository(IDbContextFactory<BudgetDbContext> dbContextFactory)
-    {
-        this.dbContextFactory = dbContextFactory;
-    }
-
     public async Task<IReadOnlyList<BudgetPlan>> ListAsync(CancellationToken ct)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(ct);
@@ -53,10 +49,7 @@ public sealed class SqliteBudgetPlanRepository : IBudgetPlanRepository
         }
         else
         {
-            existing.Name = updated.Name;
-            existing.Currency = updated.Currency;
-            existing.UpdatedUtc = updated.UpdatedUtc;
-            existing.Json = updated.Json;
+            ApplyChanges(existing, updated);
         }
 
         await dbContext.SaveChangesAsync(ct);
@@ -76,5 +69,13 @@ public sealed class SqliteBudgetPlanRepository : IBudgetPlanRepository
 
         dbContext.BudgetPlans.Remove(existing);
         await dbContext.SaveChangesAsync(ct);
+    }
+
+    private static void ApplyChanges(BudgetPlanDocument target, BudgetPlanDocument source)
+    {
+        target.Name = source.Name;
+        target.Currency = source.Currency;
+        target.UpdatedUtc = source.UpdatedUtc;
+        target.Json = source.Json;
     }
 }

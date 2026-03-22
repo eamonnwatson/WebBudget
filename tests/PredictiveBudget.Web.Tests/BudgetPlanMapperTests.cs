@@ -1,7 +1,7 @@
 using PredictiveBudget.Domain.BudgetPlans;
 using PredictiveBudget.Domain.BudgetPlans.Recurrence;
 using PredictiveBudget.Domain.Common;
-using PredictiveBudget.Persistence;
+using PredictiveBudget.Persistence.Mapping;
 
 namespace PredictiveBudget.Web.Tests;
 

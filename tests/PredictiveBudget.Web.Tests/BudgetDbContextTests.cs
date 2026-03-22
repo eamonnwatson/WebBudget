@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using PredictiveBudget.Persistence;
+using PredictiveBudget.Persistence.Database;
+using PredictiveBudget.Persistence.Documents;
 
 namespace PredictiveBudget.Web.Tests;
 

@@ -1,13 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PredictiveBudget.Application.Common;
+using PredictiveBudget.Persistence.Database;
+using PredictiveBudget.Persistence.Repositories;
 
-namespace PredictiveBudget.Persistence;
+namespace PredictiveBudget.Persistence.DependencyInjection;
 
 public static class PersistenceServiceCollectionExtensions
 {
     public static IServiceCollection AddPredictiveBudgetPersistence(this IServiceCollection services, string connectionString)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+
         services.AddDbContextFactory<BudgetDbContext>(options =>
             options.UseSqlite(connectionString));
 

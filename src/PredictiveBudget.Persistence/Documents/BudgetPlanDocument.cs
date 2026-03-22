@@ -1,4 +1,4 @@
-namespace PredictiveBudget.Persistence;
+namespace PredictiveBudget.Persistence.Documents;
 
 public sealed class BudgetPlanDocument
 {

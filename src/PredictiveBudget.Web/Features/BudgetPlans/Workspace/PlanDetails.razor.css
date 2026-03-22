@@ -68,10 +68,6 @@
     overflow: auto;
 }
 
-.modal-card-wide {
-    width: min(100%, 52rem);
-}
-
 .compact-rule-modal {
     width: min(100%, 42rem);
 }
