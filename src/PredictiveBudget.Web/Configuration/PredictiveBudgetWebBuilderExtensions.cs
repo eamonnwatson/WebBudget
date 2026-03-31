@@ -4,6 +4,7 @@ using PredictiveBudget.Application.Common;
 using PredictiveBudget.Application.Features.BudgetPlans;
 using PredictiveBudget.Domain.Forecasting;
 using PredictiveBudget.Web.Services;
+using PredictiveBudget.Web.Styling;
 using PredictiveBudget.Persistence.DependencyInjection;
 
 namespace PredictiveBudget.Web.Configuration;
@@ -24,6 +25,7 @@ internal static class PredictiveBudgetWebBuilderExtensions
         builder.Services.AddSingleton<IForecastEngine, ForecastEngine>();
         builder.Services.AddScoped<BudgetPlanService>();
         builder.Services.AddScoped<CalendarSubscriptionService>();
+        builder.Services.AddScoped<ThemeState>();
 
         return builder;
     }

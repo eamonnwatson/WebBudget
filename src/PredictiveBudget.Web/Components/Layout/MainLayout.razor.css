@@ -1,28 +1,311 @@
-.app-bar {
-    backdrop-filter: blur(18px);
-    background: linear-gradient(135deg, rgba(33, 37, 41, 0.96), rgba(43, 48, 53, 0.92));
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.app-title {
-    font-weight: 700;
-    letter-spacing: -0.02em;
-}
-
-.main-shell {
+.app-shell {
     min-height: 100vh;
+    color: var(--app-text-strong);
+    font-family: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
     background:
-        radial-gradient(circle at top left, rgba(13, 110, 253, 0.16), transparent 28%),
-        radial-gradient(circle at right, rgba(13, 202, 240, 0.1), transparent 30%),
-        linear-gradient(180deg, #212529 0%, #1c1f23 100%);
+        radial-gradient(circle at top left, var(--app-background-glow-left), transparent 28%),
+        radial-gradient(circle at top right, var(--app-background-glow-right), transparent 26%),
+        linear-gradient(180deg, var(--app-background-top) 0%, var(--app-background-bottom) 100%);
+    transition: background 180ms ease, color 180ms ease;
+}
+
+.app-shell.theme-light {
+    --app-background-top: #f7faff;
+    --app-background-bottom: #eef4fb;
+    --app-background-glow-left: rgba(53, 109, 255, 0.12);
+    --app-background-glow-right: rgba(29, 154, 159, 0.1);
+    --app-surface-card: rgba(255, 255, 255, 0.9);
+    --app-surface-card-strong: rgba(255, 255, 255, 0.98);
+    --app-surface-hero: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(238, 244, 251, 0.94));
+    --app-surface-muted: rgba(242, 246, 252, 0.9);
+    --app-surface-highlight: rgba(53, 109, 255, 0.12);
+    --app-surface-input: rgba(246, 249, 253, 0.96);
+    --app-surface-appbar: rgba(252, 253, 255, 0.82);
+    --app-surface-backdrop: rgba(222, 232, 245, 0.5);
+    --app-border-soft: rgba(137, 155, 183, 0.18);
+    --app-border-strong: rgba(53, 109, 255, 0.22);
+    --app-text-strong: rgba(16, 35, 63, 0.98);
+    --app-text-muted: rgba(74, 93, 124, 0.82);
+    --app-text-faint: rgba(116, 132, 158, 0.76);
+    --app-shadow-card: 0 24px 50px rgba(105, 126, 159, 0.16);
+    --app-shadow-strong: 0 30px 60px rgba(96, 120, 160, 0.22);
+    --app-accent-glow: rgba(53, 109, 255, 0.22);
+    --chart-grid-line: rgba(160, 178, 205, 0.28);
+    --chart-zero-line: rgba(220, 76, 100, 0.34);
+    --chart-line-color: #356dff;
+    --chart-line-glow: rgba(53, 109, 255, 0.18);
+    --chart-area-top: rgba(53, 109, 255, 0.26);
+    --chart-area-middle: rgba(53, 109, 255, 0.08);
+    --chart-area-bottom: rgba(220, 76, 100, 0.12);
+}
+
+.app-shell.theme-dark {
+    --app-background-top: #08111d;
+    --app-background-bottom: #0c1524;
+    --app-background-glow-left: rgba(122, 162, 255, 0.14);
+    --app-background-glow-right: rgba(99, 212, 198, 0.1);
+    --app-surface-card: rgba(17, 28, 45, 0.9);
+    --app-surface-card-strong: rgba(12, 21, 36, 0.96);
+    --app-surface-hero: linear-gradient(145deg, rgba(18, 29, 46, 0.98), rgba(9, 17, 29, 0.96));
+    --app-surface-muted: rgba(12, 22, 36, 0.76);
+    --app-surface-highlight: rgba(122, 162, 255, 0.14);
+    --app-surface-input: rgba(9, 17, 29, 0.7);
+    --app-surface-appbar: rgba(8, 17, 29, 0.74);
+    --app-surface-backdrop: rgba(6, 12, 20, 0.72);
+    --app-border-soft: rgba(138, 161, 197, 0.16);
+    --app-border-strong: rgba(122, 162, 255, 0.24);
+    --app-text-strong: rgba(239, 246, 255, 0.98);
+    --app-text-muted: rgba(191, 204, 223, 0.8);
+    --app-text-faint: rgba(143, 160, 183, 0.7);
+    --app-shadow-card: 0 28px 58px rgba(2, 7, 18, 0.32);
+    --app-shadow-strong: 0 34px 70px rgba(1, 5, 14, 0.44);
+    --app-accent-glow: rgba(122, 162, 255, 0.24);
+    --chart-grid-line: rgba(121, 140, 170, 0.22);
+    --chart-zero-line: rgba(251, 113, 133, 0.42);
+    --chart-line-color: #7aa2ff;
+    --chart-line-glow: rgba(122, 162, 255, 0.2);
+    --chart-area-top: rgba(122, 162, 255, 0.28);
+    --chart-area-middle: rgba(122, 162, 255, 0.1);
+    --chart-area-bottom: rgba(251, 113, 133, 0.14);
+}
+
+.app-shell ::deep .brand-title,
+.app-shell ::deep .appbar-title,
+.app-shell ::deep .insight-title {
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--app-text-strong);
+}
+
+.shell-main {
+    min-height: 100vh;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-shell ::deep .shell-appbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    min-height: 4.75rem;
+    padding: 0.85rem 1.5rem;
+    backdrop-filter: blur(20px);
+    background: var(--app-surface-appbar);
+    border-bottom: 1px solid var(--app-border-soft);
+}
+
+.appbar-heading {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.app-shell ::deep .appbar-title {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--app-text-strong);
+}
+
+.appbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.appbar-page-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.app-shell ::deep .appbar-forecast-form {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.app-shell ::deep .appbar-plan-select {
+    min-width: 15rem;
+}
+
+.app-shell ::deep .appbar-plan-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.2rem;
+    border-radius: 999px;
+    border: 1px solid var(--app-border-soft);
+    background: var(--app-surface-muted);
+}
+
+.app-shell ::deep .appbar-forecast-field {
+    min-width: 10rem;
+}
+
+.app-shell ::deep .appbar-plan-action {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 999px;
+    color: var(--mud-palette-primary);
+}
+
+.app-shell ::deep .appbar-plan-action-delete {
+    color: var(--mud-palette-error);
+}
+
+.app-shell ::deep .appbar-refresh {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.9rem;
+    border: 1px solid var(--app-border-soft);
+    background: var(--app-surface-muted);
+    color: var(--mud-palette-primary);
+}
+
+.nav-pill-group {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    padding: 0.35rem;
+    border-radius: 999px;
+    border: 1px solid var(--app-border-soft);
+    background: var(--app-surface-muted);
+}
+
+.nav-pill-group ::deep .mud-button-root {
+    min-height: 2.5rem;
+    padding-inline: 1rem;
+    border-radius: 999px;
+    color: var(--app-text-muted);
+}
+
+.app-shell ::deep .nav-pill-active {
+    background: var(--app-surface-highlight);
+    color: var(--app-text-strong) !important;
+}
+
+.app-shell ::deep .theme-toggle {
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 1rem;
+    border: 1px solid var(--app-border-strong);
+    background: var(--app-surface-highlight);
+    color: var(--mud-palette-primary);
+}
+
+.shell-body {
+    min-height: calc(100vh - 4.75rem);
 }
 
 .content-shell {
-    padding: 1.5rem;
+    padding: 1.75rem 1.75rem 2.5rem;
 }
 
-@media (max-width: 960px) {
+.app-shell ::deep .mud-paper,
+.app-shell ::deep .mud-alert {
+    color: inherit;
+}
+
+.app-shell ::deep .mud-button-root {
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: none;
+}
+
+.app-shell ::deep .mud-button-filled-primary {
+    box-shadow: 0 16px 34px var(--app-accent-glow);
+}
+
+.app-shell ::deep .mud-icon-button {
+    color: inherit;
+}
+
+.app-shell ::deep .mud-chip {
+    font-weight: 700;
+}
+
+.app-shell ::deep .mud-input-outlined {
+    border-radius: 1rem;
+    background: var(--app-surface-input);
+}
+
+.app-shell ::deep .mud-input-outlined .mud-input-outlined-border {
+    border-color: var(--app-border-soft);
+}
+
+.app-shell ::deep .mud-input > input,
+.app-shell ::deep .mud-select-input,
+.app-shell ::deep textarea.mud-input-slot {
+    color: var(--app-text-strong);
+}
+
+.app-shell ::deep .mud-input-label,
+.app-shell ::deep .mud-input-helper-text {
+    color: var(--app-text-muted);
+}
+
+.app-shell ::deep .mud-table-container,
+.app-shell ::deep .mud-table-root,
+.app-shell ::deep .mud-table-toolbar {
+    background: transparent;
+}
+
+.app-shell ::deep .mud-table-head .mud-table-cell {
+    color: var(--app-text-faint);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--app-border-soft);
+}
+
+.app-shell ::deep .mud-table-body .mud-table-cell {
+    border-bottom: 1px solid var(--app-border-soft);
+}
+
+.app-shell ::deep .mud-table-body .mud-table-row:hover {
+    background: var(--app-surface-highlight);
+}
+
+.app-shell ::deep .mud-alert {
+    border-radius: 1.25rem;
+}
+
+@media (max-width: 1100px) {
     .content-shell {
-        padding: 1rem;
+        padding: 1rem 1rem 2rem;
+    }
+}
+
+@media (max-width: 700px) {
+    .shell-appbar {
+        min-height: 4.25rem;
+        padding-inline: 1rem;
+    }
+
+    .app-shell ::deep .appbar-plan-select {
+        min-width: 11rem;
+    }
+
+    .app-shell ::deep .appbar-plan-actions {
+        gap: 0.3rem;
+    }
+
+    .app-shell ::deep .appbar-forecast-field {
+        min-width: 8.5rem;
+    }
+
+    .nav-pill-group ::deep .mud-button-root {
+        min-width: 0;
+        padding-inline: 0.8rem;
+    }
+
+    .content-shell {
+        padding-inline: 0.9rem;
     }
 }

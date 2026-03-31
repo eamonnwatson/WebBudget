@@ -2,23 +2,58 @@
 @using PredictiveBudget.Web.Styling
 
 @* Hosts the shared MudBlazor shell for every page in the active web app. *@
-<MudThemeProvider Theme="@AppTheme.Theme" IsDarkMode="true" />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<div class="@($"app-shell {(ThemeState.IsDarkMode ? "theme-dark" : "theme-light")}")">
+    <MudThemeProvider Theme="@AppTheme.Theme" IsDarkMode="@ThemeState.IsDarkMode" />
+    <MudPopoverProvider />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="0" Class="app-bar">
-        <MudText Typo="Typo.h5" Class="app-title">Predictive Budget</MudText>
-        <MudSpacer />
-        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
-            Local on your Raspberry Pi
-        </MudChip>
-    </MudAppBar>
+    <div class="shell-main">
+        <MudAppBar Elevation="0" Class="shell-appbar">
+            <div class="appbar-heading">
+                <MudText Typo="Typo.h6" Class="appbar-title">Predicitive Budget</MudText>
+            </div>
 
-    <MudMainContent Class="main-shell">
-        <MudContainer MaxWidth="MaxWidth.False" Class="content-shell">
-            @Body
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+            <MudSpacer />
+            <div class="appbar-actions">
+                <div class="appbar-page-actions">
+                    <SectionOutlet SectionName="AppBarActions" />
+                </div>
+
+                @if (IsPlanRoute)
+                {
+                    <div class="nav-pill-group">
+                        <MudButton Href="/"
+                                   Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Dashboard"
+                                   Class="@GetNavPillClass(false)">
+                            Dashboard
+                        </MudButton>
+
+                        <MudButton Href="@CurrentPlanHref"
+                                   Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Tune"
+                                   Class="@GetNavPillClass(true)">
+                            Workspace
+                        </MudButton>
+                    </div>
+                }
+
+                <MudTooltip Text="@ThemeToggleTooltip">
+                    <MudIconButton Icon="@ThemeToggleIcon"
+                                   Color="Color.Primary"
+                                   Class="theme-toggle"
+                                   OnClick="ToggleTheme" />
+                </MudTooltip>
+            </div>
+        </MudAppBar>
+
+        <main class="shell-body">
+            <MudContainer MaxWidth="MaxWidth.False" Class="content-shell">
+                @Body
+            </MudContainer>
+        </main>
+    </div>
+</div>

@@ -17,15 +17,17 @@ public sealed class SystemClockAndThemeTests
     }
 
     [Fact]
-    public void AppTheme_Theme_ExposesConfiguredPaletteAndTypography()
+    public void AppTheme_Theme_ExposesConfiguredLightAndDarkPalettes()
     {
         var theme = AppTheme.Theme;
         var buttonTypography = theme.Typography!.Button!;
 
-        Assert.Equal("#0d6efd", theme.PaletteDark!.Primary);
-        Assert.Equal("#6c757d", theme.PaletteDark.Secondary);
-        Assert.Equal("6px", theme.LayoutProperties!.DefaultBorderRadius);
-        Assert.Equal("600", buttonTypography.FontWeight);
+        Assert.Equal("#356dff", theme.PaletteLight!.Primary);
+        Assert.Equal("#1d9a9f", theme.PaletteLight.Secondary);
+        Assert.Equal("#7aa2ff", theme.PaletteDark!.Primary);
+        Assert.Equal("#63d4c6", theme.PaletteDark.Secondary);
+        Assert.Equal("22px", theme.LayoutProperties!.DefaultBorderRadius);
+        Assert.Equal("700", buttonTypography.FontWeight);
         Assert.Equal("none", buttonTypography.TextTransform);
     }
 }
