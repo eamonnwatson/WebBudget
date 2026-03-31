@@ -103,6 +103,37 @@
     font-weight: 600;
 }
 
+.dashboard-page ::deep td.transaction-row-current {
+    background: rgba(53, 109, 255, 0.1);
+}
+
+.dashboard-page ::deep td.transaction-row-current:first-child {
+    border-top-left-radius: 0.95rem;
+    border-bottom-left-radius: 0.95rem;
+}
+
+.dashboard-page ::deep td.transaction-row-current:last-child {
+    border-top-right-radius: 0.95rem;
+    border-bottom-right-radius: 0.95rem;
+}
+
+.dashboard-page ::deep .transaction-current-label,
+.dashboard-page ::deep .transaction-current-source,
+.dashboard-page ::deep .transaction-current-amount,
+.dashboard-page ::deep .transaction-current-balance {
+    color: var(--mud-palette-primary);
+}
+
+.dashboard-page ::deep .transaction-current-label,
+.dashboard-page ::deep .transaction-current-balance {
+    font-weight: 700;
+}
+
+.dashboard-page ::deep .transaction-current-source,
+.dashboard-page ::deep .transaction-current-amount {
+    font-weight: 600;
+}
+
 .modal-actions {
     justify-content: flex-end;
 }

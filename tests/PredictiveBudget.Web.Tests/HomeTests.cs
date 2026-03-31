@@ -246,23 +246,90 @@ public sealed class HomeTests
     }
 
     [Fact]
-    public async Task BuildRunningBalances_TracksBalanceAfterEachOccurrence()
+    public void BuildTransactionListRange_ExtendsTheWindowBackTenDaysAndThroughToday()
     {
-        var context = new WebBudgetPlanContext();
-        var service = context.CreateService();
-        var plan = await service.CreateAsync(
-            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
-            CancellationToken.None);
+        var range = ReflectionTestHelper.InvokeStatic<PredictiveBudget.Domain.Common.DateRange>(
+            typeof(Home),
+            "BuildTransactionListRange",
+            new DateOnly(2026, 3, 25),
+            new DateOnly(2026, 4, 20),
+            new DateOnly(2026, 3, 20));
 
+        Assert.Equal(new DateOnly(2026, 3, 10), range.Start);
+        Assert.Equal(new DateOnly(2026, 4, 20), range.End);
+    }
+
+    [Fact]
+    public void BuildOccurrenceRows_InsertsCurrentBalanceAfterTodaysTransactions()
+    {
+        var today = new DateOnly(2026, 3, 22);
         var occurrences = new List<CashflowOccurrence>
         {
-            new(new DateOnly(2026, 3, 21), new DateOnly(2026, 3, 21), "Pay", TransactionDirection.Inflow, new Money(50m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
-            new(new DateOnly(2026, 3, 22), new DateOnly(2026, 3, 22), "Rent", TransactionDirection.Outflow, new Money(25m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid())
+            new(today.AddDays(-1), today.AddDays(-1), "Pay", TransactionDirection.Inflow, new Money(50m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
+            new(today, today, "Groceries", TransactionDirection.Outflow, new Money(10m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
+            new(today, today, "Lunch", TransactionDirection.Outflow, new Money(5m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
+            new(today.AddDays(1), today.AddDays(1), "Rent", TransactionDirection.Outflow, new Money(25m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid())
         };
 
-        var balances = ReflectionTestHelper.InvokeStatic<IReadOnlyList<Money>>(typeof(Home), "BuildRunningBalances", plan, occurrences);
+        var forecast = new ForecastResult(
+            new PredictiveBudget.Domain.Common.DateRange(today.AddDays(-1), today.AddDays(1)),
+            [
+                new DailyBalancePoint(today.AddDays(-1), new Money(150m, "CAD")),
+                new DailyBalancePoint(today, new Money(135m, "CAD")),
+                new DailyBalancePoint(today.AddDays(1), new Money(110m, "CAD"))
+            ],
+            new ForecastSummary(
+                new Money(110m, "CAD"),
+                today.AddDays(1),
+                new Money(150m, "CAD"),
+                today.AddDays(-1),
+                null),
+            [],
+            occurrences);
 
-        Assert.Equal([150m, 125m], balances.Select(balance => balance.Amount).ToArray());
+        var rows = ReflectionTestHelper.InvokeStatic<IReadOnlyList<object>>(typeof(Home), "BuildOccurrenceRows", forecast, today);
+
+        Assert.Equal(["Pay", "Groceries", "Lunch", "Current balance", "Rent"], rows
+            .Select(row => ReflectionTestHelper.GetPropertyValue<string>(row, "Name"))
+            .ToArray());
+        Assert.Equal([150m, 135m, 135m, 135m, 110m], rows
+            .Select(row => ReflectionTestHelper.GetPropertyValue<Money>(row, "EndOfDayBalance").Amount)
+            .ToArray());
+        Assert.True(ReflectionTestHelper.GetPropertyValue<bool>(rows[3], "IsCurrentBalance"));
+    }
+
+    [Fact]
+    public void BuildOccurrenceRows_AddsCurrentBalanceRowWhenTodayHasNoTransactions()
+    {
+        var today = new DateOnly(2026, 3, 22);
+        var occurrences = new List<CashflowOccurrence>
+        {
+            new(today.AddDays(-1), today.AddDays(-1), "Pay", TransactionDirection.Inflow, new Money(50m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid()),
+            new(today.AddDays(1), today.AddDays(1), "Rent", TransactionDirection.Outflow, new Money(25m, "CAD"), 1, OccurrenceSource.PlannedTransaction, Guid.NewGuid())
+        };
+
+        var forecast = new ForecastResult(
+            new PredictiveBudget.Domain.Common.DateRange(today.AddDays(-1), today.AddDays(1)),
+            [
+                new DailyBalancePoint(today.AddDays(-1), new Money(150m, "CAD")),
+                new DailyBalancePoint(today, new Money(150m, "CAD")),
+                new DailyBalancePoint(today.AddDays(1), new Money(125m, "CAD"))
+            ],
+            new ForecastSummary(
+                new Money(125m, "CAD"),
+                today.AddDays(1),
+                new Money(150m, "CAD"),
+                today.AddDays(-1),
+                null),
+            [],
+            occurrences);
+
+        var rows = ReflectionTestHelper.InvokeStatic<IReadOnlyList<object>>(typeof(Home), "BuildOccurrenceRows", forecast, today);
+
+        Assert.Equal(["Pay", "Current balance", "Rent"], rows
+            .Select(row => ReflectionTestHelper.GetPropertyValue<string>(row, "Name"))
+            .ToArray());
+        Assert.True(ReflectionTestHelper.GetPropertyValue<bool>(rows[1], "IsCurrentBalance"));
     }
 
     private static Home CreateComponent(BudgetPlanService service)

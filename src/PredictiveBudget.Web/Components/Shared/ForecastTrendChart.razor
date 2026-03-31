@@ -21,11 +21,14 @@
 
             @foreach (var guide in guides)
             {
-                <line x1="@PlotLeft"
-                      x2="@PlotRightBoundary"
-                      y1="@guide.Y"
-                      y2="@guide.Y"
-                      class="forecast-trend-chart__grid-line" />
+                @if (!guide.IsZero)
+                {
+                    <line x1="@PlotLeft"
+                          x2="@PlotRightBoundary"
+                          y1="@guide.Y"
+                          y2="@guide.Y"
+                          class="forecast-trend-chart__grid-line" />
+                }
                 @RenderAxisLabel(AxisLabelX, guide.Y + 4d, guide.Label, "forecast-trend-chart__axis-label", "end")
             }
 

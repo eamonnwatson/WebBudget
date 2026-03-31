@@ -109,6 +109,43 @@ public sealed class CalendarSubscriptionEndpointTests
     }
 
     [Fact]
+    public async Task GetCalendar_IncludesRecentTransactionsFromThePreviousTenDays()
+    {
+        await using var factory = new TestWebApplicationFactory();
+        var plan = await factory.WithBudgetPlanServiceAsync(async service =>
+        {
+            var createdPlan = await service.CreateAsync(
+                new CreateBudgetPlanRequest("Household", "CAD", 200m, new DateOnly(2026, 3, 1), "America/Halifax"),
+                CancellationToken.None);
+            var updatedPlan = await service.AddPlannedTransactionAsync(
+                createdPlan.PlanId,
+                new AddPlannedTransactionRequest(new DateOnly(2026, 3, 9), "Too old", TransactionDirection.Outflow, 15m),
+                CancellationToken.None);
+            updatedPlan = await service.AddPlannedTransactionAsync(
+                updatedPlan.PlanId,
+                new AddPlannedTransactionRequest(new DateOnly(2026, 3, 15), "Recent bill", TransactionDirection.Outflow, 25m),
+                CancellationToken.None);
+            updatedPlan = await service.AddPlannedTransactionAsync(
+                updatedPlan.PlanId,
+                new AddPlannedTransactionRequest(new DateOnly(2026, 3, 21), "Upcoming rent", TransactionDirection.Outflow, 40m),
+                CancellationToken.None);
+            return await service.EnsureCalendarSubscriptionTokenAsync(updatedPlan.PlanId, CancellationToken.None);
+        });
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics");
+        var calendar = (await response.Content.ReadAsStringAsync()).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("SUMMARY:Recent bill (-25.00 CAD)", calendar);
+        Assert.Contains("DTSTART;VALUE=DATE:20260315", calendar);
+        Assert.Contains("SUMMARY:Upcoming rent (-40.00 CAD)", calendar);
+        Assert.Contains("DTSTART;VALUE=DATE:20260321", calendar);
+        Assert.DoesNotContain("SUMMARY:Too old (-15.00 CAD)", calendar);
+        Assert.DoesNotContain("DTSTART;VALUE=DATE:20260309", calendar);
+    }
+
+    [Fact]
     public async Task GetCalendar_WhenBalanceDropsBelowZero_AddsContiguousBelowZeroEvent()
     {
         await using var factory = new TestWebApplicationFactory();

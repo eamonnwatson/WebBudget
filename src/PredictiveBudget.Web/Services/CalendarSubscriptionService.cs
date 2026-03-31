@@ -14,6 +14,8 @@ public sealed class CalendarSubscriptionService(
     BudgetPlanService budgetPlanService,
     IClock clock)
 {
+    private const int RecentTransactionHistoryDays = 10;
+
     public static string BuildCalendarPath(Guid planId, string token)
         => $"/subscriptions/plans/{planId}/{token}.ics";
 
@@ -26,23 +28,24 @@ public sealed class CalendarSubscriptionService(
         }
 
         var today = clock.Today();
+        var historyStart = today.AddDays(-RecentTransactionHistoryDays);
         var endDate = today.AddMonths(12);
-        var rangeStart = plan.BalanceAsOfDate < today
+        var rangeStart = plan.BalanceAsOfDate < historyStart
             ? plan.BalanceAsOfDate
-            : today;
+            : historyStart;
 
         var forecast = await budgetPlanService.ForecastAsync(
             planId,
             new ForecastRequest(rangeStart, endDate),
             ct);
 
-        var upcomingEvents = forecast.Occurrences
+        var visibleEvents = forecast.Occurrences
             .Zip(BuildRunningBalances(plan, forecast.Occurrences), static (occurrence, runningBalance) => new CalendarEvent(occurrence, runningBalance))
-            .Where(entry => entry.Occurrence.Date >= today)
+            .Where(entry => entry.Occurrence.Date >= historyStart)
             .ToList();
-        var belowZeroRanges = BuildBelowZeroRanges(forecast.DailyPoints, today);
+        var belowZeroRanges = BuildBelowZeroRanges(forecast.DailyPoints, historyStart);
 
-        return BuildCalendar(plan, upcomingEvents, belowZeroRanges);
+        return BuildCalendar(plan, visibleEvents, belowZeroRanges);
     }
 
     private static string BuildCalendar(

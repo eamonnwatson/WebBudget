@@ -13,6 +13,8 @@ namespace PredictiveBudget.Web.Features.BudgetPlans.Dashboard;
 /// </summary>
 public partial class Home : ComponentBase
 {
+    private const int RecentTransactionHistoryDays = 10;
+
     [Inject] private BudgetPlanService BudgetPlanService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
@@ -24,6 +26,7 @@ public partial class Home : ComponentBase
 
     private BudgetPlan? _selectedPlan;
     private ForecastResult? _forecastResult;
+    private ForecastResult? _transactionForecastResult;
     private Guid? _deletePlanId;
     private string _deletePlanName = string.Empty;
     private Guid? _editingPlanId;
@@ -36,11 +39,11 @@ public partial class Home : ComponentBase
     protected override async Task OnInitializedAsync()
         => await LoadPlansAsync(resetForecastWindow: true);
 
-    private IReadOnlyList<CashflowOccurrence> ForecastOccurrences
-        => _forecastResult?.Occurrences ?? [];
+    private static DateOnly Today
+        => DateOnly.FromDateTime(DateTime.Today);
 
-    private IReadOnlyList<ForecastOccurrenceRow> ForecastRows
-        => BuildOccurrenceRows(_selectedPlan, ForecastOccurrences);
+    private IReadOnlyList<ForecastOccurrenceRow> TransactionRows
+        => BuildOccurrenceRows(_transactionForecastResult, Today);
 
     private int ForecastWindowDayCount
         => _forecastResult is null
@@ -53,7 +56,7 @@ public partial class Home : ComponentBase
             : $"{_forecastForm.StartDate.Value:MMM d} - {_forecastForm.EndDate.Value:MMM d, yyyy}";
 
     private DashboardHealthState HealthState
-        => BuildHealthState(_forecastResult, DateOnly.FromDateTime(DateTime.Today));
+        => BuildHealthState(_forecastResult, Today);
 
     private string DeletePlanMessage
         => $"Delete '{_deletePlanName}'? This removes the plan and its associated rules, transactions, and overrides.";
@@ -82,7 +85,7 @@ public partial class Home : ComponentBase
         => _isEditingPlan ? "Edit budget plan" : "Create a new budget plan";
 
     private DailyBalancePoint? TodayBalancePoint
-        => GetBalancePointForDate(_forecastResult?.DailyPoints ?? [], DateOnly.FromDateTime(DateTime.Today));
+        => GetBalancePointForDate(_forecastResult?.DailyPoints ?? [], Today);
 
     private string WorkspaceHref
         => _selectedPlan is null ? "/" : $"/plans/{_selectedPlan.PlanId}";
@@ -150,9 +153,6 @@ public partial class Home : ComponentBase
         return $"{sign}{money.Amount:N2} {money.Currency}";
     }
 
-    private static string GetAmountClass(TransactionDirection direction)
-        => direction == TransactionDirection.Outflow ? "amount-negative" : "amount-positive";
-
     private static DailyBalancePoint? GetBalancePointForDate(IReadOnlyList<DailyBalancePoint> points, DateOnly date)
         => points.FirstOrDefault(point => point.Date == date);
 
@@ -189,6 +189,7 @@ public partial class Home : ComponentBase
                 _selectedPlan = null;
                 _selectedPlanId = null;
                 _forecastResult = null;
+                _transactionForecastResult = null;
                 CloseAllModals();
                 return;
             }
@@ -264,15 +265,27 @@ public partial class Home : ComponentBase
         if (_selectedPlan is null)
         {
             _forecastResult = null;
+            _transactionForecastResult = null;
             return;
         }
+
+        var forecastStart = ToDateOnly(_forecastForm.StartDate);
+        var forecastEnd = ToDateOnly(_forecastForm.EndDate);
 
         _forecastResult = await BudgetPlanService.ForecastAsync(
             _selectedPlan.PlanId,
             new ForecastRequest(
-                ToDateOnly(_forecastForm.StartDate),
-                ToDateOnly(_forecastForm.EndDate)),
+                forecastStart,
+                forecastEnd),
             CancellationToken.None);
+
+        var transactionListRange = BuildTransactionListRange(forecastStart, forecastEnd, Today);
+        _transactionForecastResult = transactionListRange.Start == forecastStart && transactionListRange.End == forecastEnd
+            ? _forecastResult
+            : await BudgetPlanService.ForecastAsync(
+                _selectedPlan.PlanId,
+                new ForecastRequest(transactionListRange.Start, transactionListRange.End),
+                CancellationToken.None);
 
         if (showSnackbar)
         {
@@ -333,41 +346,101 @@ public partial class Home : ComponentBase
         await LoadPlansAsync(updatedPlan.PlanId, resetForecastWindow: false);
     }
 
-    private static IReadOnlyList<ForecastOccurrenceRow> BuildOccurrenceRows(BudgetPlan? plan, IReadOnlyList<CashflowOccurrence> occurrences)
+    private static PredictiveBudget.Domain.Common.DateRange BuildTransactionListRange(DateOnly forecastStart, DateOnly forecastEnd, DateOnly today)
     {
-        if (plan is null || occurrences.Count == 0)
-        {
-            return [];
-        }
-
-        var runningBalances = BuildRunningBalances(plan, occurrences);
-
-        return occurrences
-            .Zip(runningBalances, static (occurrence, runningBalance) => new ForecastOccurrenceRow(occurrence, runningBalance))
-            .ToList();
+        var historyStart = today.AddDays(-RecentTransactionHistoryDays);
+        var start = forecastStart < historyStart ? forecastStart : historyStart;
+        var end = forecastEnd > today ? forecastEnd : today;
+        return new PredictiveBudget.Domain.Common.DateRange(start, end);
     }
 
-    private static IReadOnlyList<Money> BuildRunningBalances(BudgetPlan? plan, IReadOnlyList<CashflowOccurrence> occurrences)
+    private static IReadOnlyList<ForecastOccurrenceRow> BuildOccurrenceRows(ForecastResult? result, DateOnly today)
     {
-        if (plan is null || occurrences.Count == 0)
+        if (result is null || result.DailyPoints.Count == 0)
         {
             return [];
         }
 
-        var runningBalances = new List<Money>(occurrences.Count);
-        var balance = plan.StartingBalance;
+        var dailyBalances = result.DailyPoints.ToDictionary(point => point.Date, point => point.EndOfDayBalance);
+        var rows = result.Occurrences
+            .Select(occurrence => new ForecastOccurrenceRow(
+                occurrence.Date,
+                occurrence.Name,
+                GetOccurrenceSourceLabel(occurrence),
+                occurrence.Direction,
+                occurrence.Amount,
+                dailyBalances[occurrence.Date],
+                false))
+            .ToList();
 
-        foreach (var occurrence in occurrences)
+        if (!dailyBalances.TryGetValue(today, out var todayBalance))
         {
-            var delta = occurrence.Direction == TransactionDirection.Inflow
-                ? occurrence.Amount
-                : new Money(-occurrence.Amount.Amount, occurrence.Amount.Currency);
-
-            balance += delta;
-            runningBalances.Add(balance);
+            return rows;
         }
 
-        return runningBalances;
+        var currentBalanceRow = new ForecastOccurrenceRow(
+            today,
+            "Current balance",
+            "Live checkpoint",
+            null,
+            null,
+            todayBalance,
+            true);
+
+        int lastTodayIndex = rows.FindLastIndex(row => row.Date == today);
+        if (lastTodayIndex >= 0)
+        {
+            rows.Insert(lastTodayIndex + 1, currentBalanceRow);
+            return rows;
+        }
+
+        int firstFutureIndex = rows.FindIndex(row => row.Date > today);
+        if (firstFutureIndex >= 0)
+        {
+            rows.Insert(firstFutureIndex, currentBalanceRow);
+            return rows;
+        }
+
+        rows.Add(currentBalanceRow);
+        return rows;
+    }
+
+    private static string FormatRowAmount(ForecastOccurrenceRow row)
+        => row.Direction is null || row.Amount is null
+            ? "Current"
+            : FormatSignedMoney(row.Direction.Value, row.Amount.Value);
+
+    private static string GetAmountClass(ForecastOccurrenceRow row)
+    {
+        if (row.IsCurrentBalance)
+        {
+            return "transaction-current-amount";
+        }
+
+        return row.Direction == TransactionDirection.Outflow ? "amount-negative" : "amount-positive";
+    }
+
+    private static string GetNameClass(ForecastOccurrenceRow row)
+        => row.IsCurrentBalance ? "transaction-current-label" : string.Empty;
+
+    private static string GetSourceClass(ForecastOccurrenceRow row)
+        => row.IsCurrentBalance ? "transaction-current-source" : string.Empty;
+
+    private static string GetBalanceClass(ForecastOccurrenceRow row)
+        => row.IsCurrentBalance
+            ? "transaction-running-balance transaction-current-balance"
+            : "transaction-running-balance";
+
+    private static string GetCellClass(ForecastOccurrenceRow row, string? baseClass = null)
+    {
+        if (!row.IsCurrentBalance)
+        {
+            return baseClass ?? string.Empty;
+        }
+
+        return string.IsNullOrWhiteSpace(baseClass)
+            ? "transaction-row-current"
+            : $"{baseClass} transaction-row-current";
     }
 
     private static DashboardHealthState BuildHealthState(ForecastResult? result, DateOnly today)
@@ -427,7 +500,14 @@ public partial class Home : ComponentBase
     private static string FormatDayCount(int days)
         => days == 1 ? "1 day" : $"{days} days";
 
-    private sealed record ForecastOccurrenceRow(CashflowOccurrence Occurrence, Money RunningBalance);
+    private sealed record ForecastOccurrenceRow(
+        DateOnly Date,
+        string Name,
+        string SourceLabel,
+        TransactionDirection? Direction,
+        Money? Amount,
+        Money EndOfDayBalance,
+        bool IsCurrentBalance);
 
     private sealed record DashboardHealthState(string Tone, string Badge, string Heading, string Detail);
 }

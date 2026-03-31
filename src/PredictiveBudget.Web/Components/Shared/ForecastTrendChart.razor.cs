@@ -74,12 +74,9 @@ public partial class ForecastTrendChart : ComponentBase
 
         var minimumBalance = Points.Min(point => point.EndOfDayBalance.Amount);
         var maximumBalance = Points.Max(point => point.EndOfDayBalance.Amount);
-        decimal floor = Math.Min(minimumBalance, 0m);
-        decimal ceiling = Math.Max(maximumBalance, 0m);
-        decimal range = ceiling - floor;
-        decimal padding = range == 0m ? 1m : Math.Max(range * 0.12m, 1m);
-        decimal visibleMinimum = floor - padding;
-        decimal visibleMaximum = ceiling + padding;
+        var yAxisScale = BuildYAxisScale(minimumBalance, maximumBalance);
+        decimal visibleMinimum = yAxisScale.VisibleMinimum;
+        decimal visibleMaximum = yAxisScale.VisibleMaximum;
 
         double stepX = Points.Count == 1 ? 0d : PlotWidth / (Points.Count - 1d);
         double visibleRange = (double)(visibleMaximum - visibleMinimum);
@@ -107,7 +104,7 @@ public partial class ForecastTrendChart : ComponentBase
         zeroStopOffset = Math.Clamp((zeroLineY - PlotTop) / PlotHeight * 100d, 0d, 100d);
         linePath = BuildLinePath(plotPoints);
         areaPath = BuildAreaPath(plotPoints, zeroLineY);
-        guides = BuildGuides(visibleMinimum, visibleMaximum, Currency);
+        guides = BuildGuides(yAxisScale, Currency);
         xAxisLabels = BuildXAxisLabels(plotPoints);
         minMarker = CreateMarker("Low", plotPoints.MinBy(point => point.Balance), "low");
         maxMarker = CreateMarker("High", plotPoints.MaxBy(point => point.Balance), "high");
@@ -138,21 +135,39 @@ public partial class ForecastTrendChart : ComponentBase
             $"M {points[0].X:F2} {zeroY:F2} L {string.Join(" L ", points.Select(point => $"{point.X:F2} {point.Y:F2}"))} L {points[^1].X:F2} {zeroY:F2} Z");
     }
 
-    private static IReadOnlyList<AxisGuide> BuildGuides(decimal visibleMinimum, decimal visibleMaximum, string currency)
+    private static IReadOnlyList<AxisGuide> BuildGuides(YAxisScale scale, string currency)
     {
-        const int guideCount = 5;
-        var output = new List<AxisGuide>(guideCount);
+        int stepCount = Math.Max(1, (int)decimal.Round((scale.VisibleMaximum - scale.VisibleMinimum) / scale.Step, 0, MidpointRounding.AwayFromZero));
+        var output = new List<AxisGuide>(stepCount + 1);
 
-        for (int index = 0; index < guideCount; index++)
+        for (int index = 0; index <= stepCount; index++)
         {
-            double ratio = guideCount == 1 ? 0d : index / (double)(guideCount - 1);
-            decimal value = visibleMaximum - ((visibleMaximum - visibleMinimum) * (decimal)ratio);
+            double ratio = stepCount == 0 ? 0d : index / (double)stepCount;
+            decimal value = index == stepCount
+                ? scale.VisibleMinimum
+                : scale.VisibleMaximum - (scale.Step * index);
             double y = PlotTop + (ratio * PlotHeight);
 
-            output.Add(new AxisGuide(y, FormatMoney(value, currency)));
+            output.Add(new AxisGuide(y, FormatAxisMoney(value, currency, scale.LabelDecimals), value == 0m));
         }
 
         return output;
+    }
+
+    private static YAxisScale BuildYAxisScale(decimal minimumBalance, decimal maximumBalance)
+    {
+        decimal floor = Math.Min(minimumBalance, 0m);
+        decimal ceiling = Math.Max(maximumBalance, 0m);
+        decimal range = ceiling - floor;
+        decimal padding = range == 0m ? 1m : Math.Max(range * 0.12m, 1m);
+        decimal rawMinimum = floor - padding;
+        decimal rawMaximum = ceiling + padding;
+        decimal roughStep = (rawMaximum - rawMinimum) / 4m;
+        decimal step = NiceStep(roughStep);
+        decimal visibleMinimum = decimal.Floor(rawMinimum / step) * step;
+        decimal visibleMaximum = decimal.Ceiling(rawMaximum / step) * step;
+
+        return new YAxisScale(visibleMinimum, visibleMaximum, step, GetAxisLabelDecimals(step));
     }
 
     private static string BuildLinePath(IReadOnlyList<ChartPlotPoint> points)
@@ -193,6 +208,72 @@ public partial class ForecastTrendChart : ComponentBase
     private static string FormatMoney(decimal amount, string currency)
         => $"{amount:N2} {currency}";
 
+    private static string FormatAxisMoney(decimal amount, string currency, int decimals)
+        => $"{amount.ToString($"N{decimals}", CultureInfo.InvariantCulture)} {currency}";
+
+    private static int GetAxisLabelDecimals(decimal step)
+    {
+        if (step >= 1m)
+        {
+            return 0;
+        }
+
+        step = decimal.Abs(step);
+        int decimals = 0;
+
+        while (step != decimal.Truncate(step) && decimals < 2)
+        {
+            step *= 10m;
+            decimals++;
+        }
+
+        return decimals;
+    }
+
+    private static decimal NiceStep(decimal roughStep)
+    {
+        if (roughStep <= 0m)
+        {
+            return 1m;
+        }
+
+        int exponent = (int)Math.Floor(Math.Log10((double)roughStep));
+        decimal powerOfTen = Pow10(exponent);
+        decimal normalized = roughStep / powerOfTen;
+        decimal niceFraction = normalized switch
+        {
+            <= 1m => 1m,
+            <= 2m => 2m,
+            <= 2.5m => 2.5m,
+            <= 5m => 5m,
+            _ => 10m
+        };
+
+        return niceFraction * powerOfTen;
+    }
+
+    private static decimal Pow10(int exponent)
+    {
+        decimal value = 1m;
+
+        if (exponent >= 0)
+        {
+            for (int index = 0; index < exponent; index++)
+            {
+                value *= 10m;
+            }
+
+            return value;
+        }
+
+        for (int index = 0; index < -exponent; index++)
+        {
+            value /= 10m;
+        }
+
+        return value;
+    }
+
     private static string BuildRotationTransform(double angle, double x, double y)
         => string.Create(CultureInfo.InvariantCulture, $"rotate({angle:F0} {x:F2} {y:F2})");
 
@@ -222,7 +303,9 @@ public partial class ForecastTrendChart : ComponentBase
     private void SetHoveredPoint(ChartPlotPoint point)
         => hoveredPoint = point;
 
-    private sealed record AxisGuide(double Y, string Label);
+    private sealed record AxisGuide(double Y, string Label, bool IsZero);
+
+    private sealed record YAxisScale(decimal VisibleMinimum, decimal VisibleMaximum, decimal Step, int LabelDecimals);
 
     private sealed record ChartPlotPoint(
         DateOnly Date,
