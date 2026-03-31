@@ -1,0 +1,35 @@
+.budget-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.budget-section-copy {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.budget-section-header ::deep .budget-section-kicker {
+    color: var(--app-text-muted);
+    letter-spacing: 0.14em;
+}
+
+.budget-section-header ::deep .budget-section-title {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--app-text-strong);
+}
+
+.budget-section-header ::deep .budget-section-description {
+    max-width: 46rem;
+    color: var(--app-text-muted);
+}
+
+.budget-section-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}

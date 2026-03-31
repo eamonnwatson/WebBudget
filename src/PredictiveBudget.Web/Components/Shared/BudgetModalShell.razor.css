@@ -1,0 +1,71 @@
+.budget-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: var(--app-surface-backdrop);
+    backdrop-filter: blur(18px);
+}
+
+.budget-modal-backdrop ::deep .budget-modal-shell {
+    width: min(100%, 42rem);
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+    padding: 1.5rem;
+    border-radius: 1.75rem;
+    border: 1px solid var(--app-border-strong);
+    background: var(--app-surface-card-strong);
+    box-shadow: var(--app-shadow-strong);
+}
+
+.budget-modal-backdrop ::deep .budget-modal-shell-wide {
+    width: min(100%, 58rem);
+}
+
+.budget-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.budget-modal-header__copy {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.budget-modal-backdrop ::deep .budget-modal-kicker {
+    color: var(--app-text-muted);
+    letter-spacing: 0.14em;
+}
+
+.budget-modal-backdrop ::deep .budget-modal-title {
+    color: var(--app-text-strong);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.budget-modal-backdrop ::deep .budget-modal-description {
+    color: var(--app-text-muted);
+}
+
+.budget-modal-backdrop ::deep .budget-modal-close {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 700px) {
+    .budget-modal-backdrop {
+        padding: 0.85rem;
+        align-items: flex-end;
+    }
+
+    .budget-modal-backdrop ::deep .budget-modal-shell,
+    .budget-modal-backdrop ::deep .budget-modal-shell-wide {
+        width: 100%;
+        max-height: min(92vh, 48rem);
+        border-radius: 1.5rem 1.5rem 0 0;
+    }
+}

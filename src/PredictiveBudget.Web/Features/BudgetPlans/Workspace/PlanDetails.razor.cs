@@ -46,6 +46,7 @@ public partial class PlanDetails : ComponentBase
 
     private BudgetPlan? _plan;
     private BalanceUpdateFormModel _balanceForm = BalanceUpdateFormModel.CreateDefault(0m, DateOnly.FromDateTime(DateTime.Today));
+    private CreateBudgetPlanFormModel _planForm = CreateBudgetPlanFormModel.CreateDefault();
     private RecurringRuleFormModel _recurringRuleForm = RecurringRuleFormModel.CreateDefault();
     private PlannedTransactionFormModel _plannedTransactionForm = PlannedTransactionFormModel.CreateDefault();
     private OccurrenceOverrideFormModel _overrideForm = OccurrenceOverrideFormModel.CreateDefault();
@@ -60,6 +61,7 @@ public partial class PlanDetails : ComponentBase
     private bool _showPlannedTransactionModal;
     private bool _showOverrideModal;
     private bool _showDeleteModal;
+    private bool _showPlanSettingsModal;
     private bool _isLoading = true;
 
     protected override async Task OnParametersSetAsync()
@@ -78,6 +80,7 @@ public partial class PlanDetails : ComponentBase
                 _plan = await BudgetPlanService.EnsureCalendarSubscriptionTokenAsync(PlanId, CancellationToken.None);
                 // Keep the quick balance editor aligned with the latest persisted checkpoint.
                 _balanceForm = BalanceUpdateFormModel.CreateDefault(_plan.StartingBalance.Amount, _plan.BalanceAsOfDate);
+                _planForm = CreateBudgetPlanFormModel.CreateFromPlan(_plan);
             }
         }
         finally
@@ -97,6 +100,34 @@ public partial class PlanDetails : ComponentBase
 
         ApplyUpdatedPlan(updatedPlan);
         Snackbar.Add("Starting balance updated.", Severity.Success);
+    }
+
+    private void OpenEditPlanModal()
+    {
+        if (_plan is null)
+        {
+            return;
+        }
+
+        CloseAllModals();
+        _planForm = CreateBudgetPlanFormModel.CreateFromPlan(_plan);
+        _showPlanSettingsModal = true;
+    }
+
+    private async Task SavePlanSettingsAsync()
+    {
+        var updatedPlan = await BudgetPlanService.UpdateAsync(
+            PlanId,
+            new UpdateBudgetPlanRequest(
+                _planForm.Name,
+                _planForm.StartingBalance ?? 0m,
+                ToDateOnly(_planForm.BalanceAsOfDate),
+                _planForm.TimeZoneId),
+            CancellationToken.None);
+
+        ApplyUpdatedPlan(updatedPlan);
+        CloseAllModals();
+        Snackbar.Add("Plan details updated.", Severity.Success);
     }
 
     private void OpenAddRecurringRuleModal()
@@ -428,6 +459,9 @@ public partial class PlanDetails : ComponentBase
         return $"{sign}{money.Amount:N2} {money.Currency}";
     }
 
+    private static Color GetDirectionColor(TransactionDirection direction)
+        => direction == TransactionDirection.Inflow ? Color.Success : Color.Error;
+
     private static string FormatDate(DateOnly date)
         => date.ToString("MMM d, yyyy");
 
@@ -565,10 +599,12 @@ public partial class PlanDetails : ComponentBase
     {
         _plan = updatedPlan;
         _balanceForm = BalanceUpdateFormModel.CreateDefault(updatedPlan.StartingBalance.Amount, updatedPlan.BalanceAsOfDate);
+        _planForm = CreateBudgetPlanFormModel.CreateFromPlan(updatedPlan);
     }
 
     private void CloseAllModals()
     {
+        _showPlanSettingsModal = false;
         _showRecurringRuleModal = false;
         _showPlannedTransactionModal = false;
         _showOverrideModal = false;

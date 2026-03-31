@@ -1,0 +1,49 @@
+<div class="dashboard-metric-card-shell">
+    <MudPaper Class="@($"dashboard-metric-card dashboard-metric-card-{Tone} {Class}")" Elevation="0" Outlined="true">
+        <div class="dashboard-metric-card__top">
+            <div class="dashboard-metric-card__copy">
+                <MudText Typo="Typo.overline" Class="dashboard-metric-card__label">@Label</MudText>
+                <MudText Typo="Typo.h5" Class="dashboard-metric-card__value">@Value</MudText>
+
+                @if (!string.IsNullOrWhiteSpace(Detail))
+                {
+                    <MudText Typo="Typo.body2" Class="dashboard-metric-card__detail">@Detail</MudText>
+                }
+            </div>
+
+            <div class="dashboard-metric-card__icon">
+                <MudIcon Icon="@Icon" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Badge))
+        {
+            <div class="dashboard-metric-card__footer">
+                <span class="dashboard-metric-card__badge">@Badge</span>
+            </div>
+        }
+    </MudPaper>
+</div>
+
+@code {
+    [Parameter]
+    public string? Badge { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string? Detail { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Tone { get; set; } = "neutral";
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+}

@@ -1,131 +1,119 @@
-.page-header {
-    gap: 1rem;
-    flex-wrap: wrap;
+.dashboard-page {
+    position: relative;
+    padding-top: 1.3rem;
 }
 
-.page-toolbar {
+.dashboard-page ::deep .surface-card,
+.dashboard-page ::deep .empty-feature-card {
+    border: 1px solid var(--app-border-soft);
+    border-radius: 1.75rem;
+    background: var(--app-surface-card);
+    box-shadow: var(--app-shadow-card);
+}
+
+.modal-actions {
+    display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
 }
 
-.plan-switcher {
-    min-width: 13rem;
+.dashboard-page ::deep .dashboard-copy,
+.dashboard-page ::deep .muted-copy {
+    color: var(--app-text-muted);
 }
 
-.panel-card {
-    min-height: 100%;
-    background: linear-gradient(180deg, rgba(43, 48, 53, 0.96), rgba(33, 37, 41, 0.96));
-    border: 1px solid rgba(255, 255, 255, 0.08);
+.dashboard-page ::deep .health-card,
+.dashboard-page ::deep .reconcile-card,
+.dashboard-page ::deep .chart-card,
+.dashboard-page ::deep .transaction-card,
+.dashboard-page ::deep .state-card,
+.dashboard-page ::deep .empty-state-card {
+    padding: 1.25rem;
 }
 
-.section-copy {
-    color: rgba(248, 249, 250, 0.72);
+.dashboard-page ::deep .metric-grid,
+.dashboard-page ::deep .dashboard-secondary-grid,
+.dashboard-page ::deep .empty-state-grid,
+.dashboard-page ::deep .plan-modal-grid {
+    row-gap: 1rem;
+}
+
+.dashboard-page ::deep .chart-card,
+.dashboard-page ::deep .transaction-card {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.dashboard-page ::deep .health-card,
+.dashboard-page ::deep .reconcile-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.dashboard-page ::deep .health-card-success {
+    border-color: rgba(15, 159, 120, 0.24);
+}
+
+.dashboard-page ::deep .health-card-warning {
+    border-color: rgba(245, 158, 11, 0.22);
+}
+
+.dashboard-page ::deep .health-card-danger {
+    border-color: rgba(220, 76, 100, 0.24);
+}
+
+.dashboard-page ::deep .reconcile-form {
+    row-gap: 0.85rem;
+}
+
+.dashboard-page ::deep .state-card,
+.dashboard-page ::deep .empty-state-card {
+    min-height: 20rem;
 }
 
 .loading-state {
-    min-height: 10rem;
+    min-height: 16rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.summary-card,
-.modal-card {
-    background: rgba(52, 58, 64, 0.94);
-    border: 1px solid rgba(13, 110, 253, 0.18);
+.dashboard-page ::deep .empty-state-card {
+    background: var(--app-surface-hero);
 }
 
-.action-row,
-.modal-actions {
-    gap: 0.75rem;
-    flex-wrap: wrap;
+.dashboard-page ::deep .empty-feature-card {
+    height: 100%;
+    padding: 1.2rem;
+    background: var(--app-surface-muted);
 }
 
-.forecast-header,
-.forecast-form,
-.section-header {
-    gap: 1rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.section-header {
-    justify-content: space-between;
-}
-
-.chart-shell {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.forecast-chart {
-    width: min(100%, 68rem);
-    margin-inline: auto;
-}
-
-.chart-card :deep(.mud-chart) {
-    width: 100%;
-}
-
-.compact-balance-grid {
-    align-items: end;
-}
-
-.compact-balance-actions {
-    display: flex;
-    align-items: stretch;
-}
-
-.compact-balance-actions :deep(.mud-button-root) {
-    width: 100%;
-}
-
-.amount-positive {
+.dashboard-page ::deep .amount-positive {
     color: var(--mud-palette-success);
-    font-weight: 600;
+    font-weight: 700;
 }
 
-.amount-negative {
+.dashboard-page ::deep .amount-negative {
     color: var(--mud-palette-error);
+    font-weight: 700;
+}
+
+.dashboard-page ::deep .transaction-running-balance {
+    color: var(--app-text-muted);
     font-weight: 600;
 }
 
-.transaction-running-balance {
-    color: rgba(248, 249, 250, 0.72);
-    font-weight: 500;
-}
-
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1400;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    background: rgba(15, 23, 42, 0.72);
-    backdrop-filter: blur(6px);
-}
-
-.modal-card {
-    width: min(100%, 40rem);
-    max-height: calc(100vh - 3rem);
-    overflow: auto;
-}
-
-.modal-card-wide {
-    width: min(100%, 52rem);
+.modal-actions {
+    justify-content: flex-end;
 }
 
 @media (max-width: 959.98px) {
-    .plan-switcher,
-    .forecast-form,
-    .forecast-form > * {
-        width: 100%;
-    }
-
-    .compact-balance-actions {
-        display: block;
+    .dashboard-page ::deep .health-card,
+    .dashboard-page ::deep .reconcile-card,
+    .dashboard-page ::deep .chart-card,
+    .dashboard-page ::deep .transaction-card,
+    .dashboard-page ::deep .state-card,
+    .dashboard-page ::deep .empty-state-card {
+        padding: 1.1rem;
     }
 }

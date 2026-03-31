@@ -1,0 +1,185 @@
+<div class="forecast-trend-chart" @onmouseleave="ClearHoveredPoint">
+    @if (!HasData)
+    {
+        <div class="forecast-trend-chart__empty">
+            <MudText Typo="Typo.subtitle1">No forecast data yet</MudText>
+            <MudText Typo="Typo.body2">Run a forecast window to populate the balance trend.</MudText>
+        </div>
+    }
+    else
+    {
+        <svg class="forecast-trend-chart__svg"
+             viewBox="0 0 @ViewWidth @ViewHeight"
+             aria-label="Forecast balance trend">
+            <defs>
+                <linearGradient id="@areaGradientId" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" class="forecast-trend-chart__gradient-stop forecast-trend-chart__gradient-stop-top" />
+                    <stop offset="@($"{zeroStopOffset:F2}%")" class="forecast-trend-chart__gradient-stop forecast-trend-chart__gradient-stop-middle" />
+                    <stop offset="100%" class="forecast-trend-chart__gradient-stop forecast-trend-chart__gradient-stop-bottom" />
+                </linearGradient>
+            </defs>
+
+            @foreach (var guide in guides)
+            {
+                <line x1="@PlotLeft"
+                      x2="@PlotRightBoundary"
+                      y1="@guide.Y"
+                      y2="@guide.Y"
+                      class="forecast-trend-chart__grid-line" />
+                @RenderAxisLabel(AxisLabelX, guide.Y + 4d, guide.Label, "forecast-trend-chart__axis-label", "end")
+            }
+
+            <line x1="@PlotLeft"
+                  x2="@PlotRightBoundary"
+                  y1="@zeroLineY"
+                  y2="@zeroLineY"
+                  class="forecast-trend-chart__zero-line" />
+
+            @if (belowZeroMarker is not null)
+            {
+                <line x1="@belowZeroMarker.X"
+                      x2="@belowZeroMarker.X"
+                      y1="@PlotTop"
+                      y2="@PlotBottomBoundary"
+                      class="forecast-trend-chart__below-zero-line" />
+                @RenderAxisLabel(belowZeroMarker.X, PlotTop - 6d, "Below zero", "forecast-trend-chart__below-zero-label", "middle")
+            }
+
+            <path d="@areaPath" class="forecast-trend-chart__area-path" fill="@($"url(#{areaGradientId})")" />
+            <path d="@linePath" class="forecast-trend-chart__line-path" />
+
+            @foreach (var point in plotPoints)
+            {
+                <circle cx="@point.X"
+                        cy="@point.Y"
+                        r="9"
+                        class="forecast-trend-chart__hit-area"
+                        @onmouseenter="@(() => SetHoveredPoint(point))">
+                    <title>@point.Tooltip</title>
+                </circle>
+            }
+
+            @if (maxMarker is not null)
+            {
+                @RenderMarker(maxMarker)
+            }
+
+            @if (minMarker is not null)
+            {
+                @RenderMarker(minMarker)
+            }
+
+            @foreach (var label in xAxisLabels)
+            {
+                @RenderAxisLabel(label.X, PlotBottomBoundary + 36d, label.Text, "forecast-trend-chart__x-label", "end", BuildRotationTransform(XAxisLabelAngle, label.X, PlotBottomBoundary + 36d))
+            }
+        </svg>
+
+        @if (hoveredPoint is not null)
+        {
+            <div class="@TooltipClass" style="@BuildTooltipStyle(hoveredPoint)">
+                <div class="forecast-trend-chart__tooltip-date">@hoveredPoint.DateLabel</div>
+                <div class="forecast-trend-chart__tooltip-balance">@hoveredPoint.BalanceLabel</div>
+            </div>
+        }
+
+        <div class="forecast-trend-chart__summary">
+            @if (maxMarker is not null)
+            {
+                <div class="forecast-trend-chart__summary-item">
+                    <span class="forecast-trend-chart__summary-dot forecast-trend-chart__summary-dot-high"></span>
+                    <div>
+                        <div class="forecast-trend-chart__summary-label">Highest point</div>
+                        <div class="forecast-trend-chart__summary-value">@maxMarker.Value</div>
+                        <div class="forecast-trend-chart__summary-meta">@maxMarker.DateLabel</div>
+                    </div>
+                </div>
+            }
+
+            @if (minMarker is not null)
+            {
+                <div class="forecast-trend-chart__summary-item">
+                    <span class="forecast-trend-chart__summary-dot forecast-trend-chart__summary-dot-low"></span>
+                    <div>
+                        <div class="forecast-trend-chart__summary-label">Lowest point</div>
+                        <div class="forecast-trend-chart__summary-value">@minMarker.Value</div>
+                        <div class="forecast-trend-chart__summary-meta">@minMarker.DateLabel</div>
+                    </div>
+                </div>
+            }
+
+            @if (belowZeroMarker is not null)
+            {
+                <div class="forecast-trend-chart__summary-item">
+                    <span class="forecast-trend-chart__summary-dot forecast-trend-chart__summary-dot-risk"></span>
+                    <div>
+                        <div class="forecast-trend-chart__summary-label">First below zero</div>
+                        <div class="forecast-trend-chart__summary-value">@belowZeroMarker.DateLabel</div>
+                        <div class="forecast-trend-chart__summary-meta">Forecast turns negative here</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private RenderFragment RenderAxisLabel(double x, double y, string label, string className, string? textAnchor, string? transform = null) => builder =>
+    {
+        builder.OpenElement(0, "text");
+        builder.AddAttribute(1, "x", x);
+        builder.AddAttribute(2, "y", y);
+
+        if (!string.IsNullOrWhiteSpace(textAnchor))
+        {
+            builder.AddAttribute(3, "text-anchor", textAnchor);
+        }
+
+        if (!string.IsNullOrWhiteSpace(transform))
+        {
+            builder.AddAttribute(4, "transform", transform);
+        }
+
+        builder.AddAttribute(5, "class", className);
+        builder.AddContent(6, label);
+        builder.CloseElement();
+    };
+
+    private RenderFragment RenderMarker(HighlightMarker marker) => builder =>
+    {
+        builder.OpenElement(0, "g");
+        builder.AddAttribute(1, "class", $"forecast-trend-chart__marker forecast-trend-chart__marker-{marker.Tone}");
+
+        builder.OpenElement(2, "circle");
+        builder.AddAttribute(3, "cx", marker.X);
+        builder.AddAttribute(4, "cy", marker.Y);
+        builder.AddAttribute(5, "r", 13);
+        builder.AddAttribute(6, "class", "forecast-trend-chart__marker-ring");
+        builder.CloseElement();
+
+        builder.OpenElement(7, "circle");
+        builder.AddAttribute(8, "cx", marker.X);
+        builder.AddAttribute(9, "cy", marker.Y);
+        builder.AddAttribute(10, "r", 5.5);
+        builder.AddAttribute(11, "class", "forecast-trend-chart__marker-core");
+        builder.CloseElement();
+
+        builder.OpenElement(12, "text");
+        builder.AddAttribute(13, "x", marker.X);
+        builder.AddAttribute(14, "y", marker.CaptionY);
+        builder.AddAttribute(15, "text-anchor", "middle");
+        builder.AddAttribute(16, "class", "forecast-trend-chart__marker-caption");
+        builder.AddContent(17, marker.Title);
+        builder.CloseElement();
+
+        builder.OpenElement(18, "text");
+        builder.AddAttribute(19, "x", marker.X);
+        builder.AddAttribute(20, "y", marker.ValueY);
+        builder.AddAttribute(21, "text-anchor", "middle");
+        builder.AddAttribute(22, "class", "forecast-trend-chart__marker-value");
+        builder.AddContent(23, marker.Value);
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+}

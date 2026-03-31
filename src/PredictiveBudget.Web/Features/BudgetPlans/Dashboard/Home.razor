@@ -4,63 +4,79 @@
 @* Serves as the landing dashboard for plan selection, forecasting, and quick balance updates. *@
 <PageTitle>@(_selectedPlan?.Name ?? "Budget dashboard")</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Class="page-header">
-        <div>
-            <MudText Typo="Typo.h4">Budget dashboard</MudText>
-            <MudText Typo="Typo.body2" Class="section-copy">
-                Review the active forecast, scan upcoming transactions, and jump into the full plan workspace when you need to manage the details.
-            </MudText>
-        </div>
-        <MudSpacer />
-        <MudStack Row="true" AlignItems="AlignItems.Center" Class="page-toolbar">
-            @if (_selectedPlan is not null)
-            {
-                <MudSelect T="Guid"
-                           Label="Plan"
-                           Dense="true"
+<SectionContent SectionName="AppBarActions">
+    @if (_selectedPlan is not null)
+    {
+        <EditForm Model="_forecastForm" OnValidSubmit="RunForecastAsync" class="appbar-forecast-form">
+            <DataAnnotationsValidator />
+
+            <MudSelect T="Guid"
+                       Label="Plan"
+                       Dense="true"
+                       Margin="Margin.Dense"
+                       Variant="Variant.Outlined"
+                       Class="appbar-plan-select"
+                       Value="_selectedPlan.PlanId"
+                       ValueChanged="ChangeSelectedPlanAsync">
+                @foreach (var plan in _plans)
+                {
+                    <MudSelectItem Value="@plan.PlanId">@plan.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <div class="appbar-plan-actions">
+                <MudTooltip Text="New plan">
+                    <MudIconButton Icon="@Icons.Material.Filled.AddCircle"
+                                   ButtonType="ButtonType.Button"
+                                   Color="Color.Primary"
+                                   Class="appbar-plan-action"
+                                   OnClick="OpenCreatePlanModal" />
+                </MudTooltip>
+
+                <MudTooltip Text="Edit plan">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   ButtonType="ButtonType.Button"
+                                   Color="Color.Primary"
+                                   Class="appbar-plan-action"
+                                   OnClick="OpenEditPlanModal" />
+                </MudTooltip>
+
+                <MudTooltip Text="Delete plan">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   ButtonType="ButtonType.Button"
+                                   Color="Color.Error"
+                                   Class="appbar-plan-action appbar-plan-action-delete"
+                                   OnClick="OpenDeletePlanModal" />
+                </MudTooltip>
+            </div>
+
+            <MudDatePicker Label="Start"
                            Margin="Margin.Dense"
                            Variant="Variant.Outlined"
-                           Class="plan-switcher"
-                           Value="_selectedPlan.PlanId"
-                           ValueChanged="ChangeSelectedPlanAsync">
-                    @foreach (var plan in _plans)
-                    {
-                        <MudSelectItem Value="@plan.PlanId">@plan.Name</MudSelectItem>
-                    }
-                </MudSelect>
+                           Class="appbar-forecast-field"
+                           @bind-Date="_forecastForm.StartDate" />
+            <MudDatePicker Label="End"
+                           Margin="Margin.Dense"
+                           Variant="Variant.Outlined"
+                           Class="appbar-forecast-field"
+                           @bind-Date="_forecastForm.EndDate" />
 
-                <MudButton Href="@($"/plans/{_selectedPlan.PlanId}")"
-                           Variant="Variant.Text"
-                           Color="Color.Secondary"
-                           StartIcon="@Icons.Material.Filled.OpenInNew">
-                    Full workspace
-                </MudButton>
+            <MudTooltip Text="Refresh forecast">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               ButtonType="ButtonType.Submit"
+                               Color="Color.Primary"
+                               Class="appbar-refresh" />
+            </MudTooltip>
+        </EditForm>
+    }
+</SectionContent>
 
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Refresh"
-                           OnClick="@(() => LoadPlansAsync(_selectedPlan.PlanId, false))">
-                    Refresh
-                </MudButton>
-
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Error"
-                           StartIcon="@Icons.Material.Filled.Delete"
-                           OnClick="OpenDeletePlanModal">
-                    Delete
-                </MudButton>
-            }
-
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="OpenCreatePlanModal">
-                New plan
-            </MudButton>
-        </MudStack>
-    </MudStack>
+<div class="dashboard-page">
+<MudStack Spacing="4">
 
     @if (_isLoading)
     {
-        <MudPaper Class="panel-card pa-6">
+        <MudPaper Class="surface-card state-card" Elevation="0">
             <div class="loading-state">
                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
             </div>
@@ -68,275 +84,299 @@
     }
     else if (_selectedPlan is null)
     {
-        <MudPaper Class="panel-card pa-6">
+        <MudPaper Class="surface-card empty-state-card" Elevation="0">
             <MudStack Spacing="3">
-                <div>
-                    <MudText Typo="Typo.h4">Create your first budget plan</MudText>
-                    <MudText Typo="Typo.body2" Class="section-copy">
-                        There are no plans yet, so start by creating one with a reconciled balance and time zone.
-                    </MudText>
-                </div>
-                <MudStack Row="true" Class="action-row">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="OpenCreatePlanModal">
-                        Create plan
-                    </MudButton>
-                </MudStack>
+                <BudgetSectionHeader Kicker="Start here"
+                                     Title="Create your first budget plan"
+                                     TitleTypo="Typo.h4"
+                                     Description="Start with a reconciled balance, currency, and time zone, then use forecasts to understand upcoming cash pressure across the year." />
+
+                <MudGrid Class="empty-state-grid">
+                    <MudItem xs="12" md="4">
+                        <MudPaper Class="empty-feature-card" Elevation="0">
+                            <MudText Typo="Typo.subtitle1">Forecast cash flow</MudText>
+                            <MudText Typo="Typo.body2" Class="muted-copy">
+                                See how recurring rules and planned transactions shape the balance trend across the selected range.
+                            </MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudPaper Class="empty-feature-card" Elevation="0">
+                            <MudText Typo="Typo.subtitle1">Surface risk early</MudText>
+                            <MudText Typo="Typo.body2" Class="muted-copy">
+                                Highlight the first below-zero day and focus attention on the most urgent windows.
+                            </MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudPaper Class="empty-feature-card" Elevation="0">
+                            <MudText Typo="Typo.subtitle1">Refine details later</MudText>
+                            <MudText Typo="Typo.body2" Class="muted-copy">
+                                Jump into the workspace only when you need to manage rules, one-offs, or occurrence overrides.
+                            </MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.AddCircle"
+                           OnClick="OpenCreatePlanModal">
+                    Create plan
+                </MudButton>
             </MudStack>
         </MudPaper>
     }
     else
     {
-        <MudPaper Class="pa-5 panel-card">
-            <MudStack Spacing="4">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="forecast-header">
-                    <div>
-                        <MudText Typo="Typo.h5">Forecast summary</MudText>
-                        <MudText Typo="Typo.body2" Class="section-copy">
-                            The summary, chart, and transaction list all reflect the selected forecast window.
-                        </MudText>
-                    </div>
-                    <MudSpacer />
-                    <EditForm Model="_forecastForm" OnValidSubmit="RunForecastAsync">
-                        <DataAnnotationsValidator />
-                        <MudStack Row="true" Class="forecast-form">
-                            <MudDatePicker Label="Start" Variant="Variant.Outlined" @bind-Date="_forecastForm.StartDate" />
-                            <MudDatePicker Label="End" Variant="Variant.Outlined" @bind-Date="_forecastForm.EndDate" />
-                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ShowChart">
-                                Refresh forecast
-                            </MudButton>
-                        </MudStack>
-                    </EditForm>
-                </MudStack>
+        <MudGrid Class="metric-grid">
+            <MudItem xs="12" sm="6" xl="3">
+                <DashboardMetricCard Label="Today's balance"
+                                     Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                                     Tone="primary"
+                                     Value="@(TodayBalancePoint is null ? "Outside window" : FormatMoney(TodayBalancePoint.EndOfDayBalance))"
+                                     Detail="@(TodayBalancePoint is null ? $"Include {DateTime.Today:MMM d, yyyy} in the selected range." : FormatDate(TodayBalancePoint.Date))"
+                                     Badge="@(TodayBalancePoint is null ? ForecastWindowLabel : "Live checkpoint")" />
+            </MudItem>
 
-                @if (_forecastResult is null)
-                {
-                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-                        Run a forecast to see the minimum, maximum, below-zero risk, and balance trend for this plan.
-                    </MudAlert>
-                }
-                else
-                {
-                    <MudGrid>
-                        <MudItem xs="12" md="6" lg="3">
-                            <MudPaper Class="summary-card pa-4" Outlined="true">
-                                <MudText Typo="Typo.overline">Today's balance</MudText>
-                                @if (TodayBalancePoint is null)
-                                {
-                                    <MudText Typo="Typo.h5">Outside window</MudText>
-                                    <MudText Typo="Typo.body2">Include @DateTime.Today.ToString("MMM d, yyyy") in the selected range</MudText>
-                                }
-                                else
-                                {
-                                    <MudText Typo="Typo.h5">@FormatMoney(TodayBalancePoint.EndOfDayBalance)</MudText>
-                                    <MudText Typo="Typo.body2">@FormatDate(TodayBalancePoint.Date)</MudText>
-                                }
-                            </MudPaper>
-                        </MudItem>
-                        <MudItem xs="12" md="6" lg="3">
-                            <MudPaper Class="summary-card pa-4" Outlined="true">
-                                <MudText Typo="Typo.overline">Maximum balance</MudText>
-                                <MudText Typo="Typo.h5">@FormatMoney(_forecastResult.Summary.MaxBalance)</MudText>
-                                <MudText Typo="Typo.body2">@FormatDate(_forecastResult.Summary.MaxDate)</MudText>
-                            </MudPaper>
-                        </MudItem>
-                        <MudItem xs="12" md="6" lg="3">
-                            <MudPaper Class="summary-card pa-4" Outlined="true">
-                                <MudText Typo="Typo.overline">Minimum balance</MudText>
-                                <MudText Typo="Typo.h5">@FormatMoney(_forecastResult.Summary.MinBalance)</MudText>
-                                <MudText Typo="Typo.body2">@FormatDate(_forecastResult.Summary.MinDate)</MudText>
-                            </MudPaper>
-                        </MudItem>
-                        <MudItem xs="12" md="6" lg="3">
-                            <MudPaper Class="summary-card pa-4" Outlined="true">
-                                <MudText Typo="Typo.overline">First below zero</MudText>
-                                <MudText Typo="Typo.h5">@(_forecastResult.Summary.FirstBelowZeroDate is null ? "Stays above zero" : FormatDate(_forecastResult.Summary.FirstBelowZeroDate.Value))</MudText>
-                                <MudText Typo="Typo.body2">@_forecastResult.BelowZeroDates.Count day(s) below zero in this window</MudText>
-                            </MudPaper>
-                        </MudItem>
-                    </MudGrid>
+            <MudItem xs="12" sm="6" xl="3">
+                <DashboardMetricCard Label="Maximum balance"
+                                     Icon="@Icons.Material.Filled.NorthEast"
+                                     Tone="success"
+                                     Value="@FormatMoney(_forecastResult!.Summary.MaxBalance)"
+                                     Detail="@FormatDate(_forecastResult.Summary.MaxDate)"
+                                     Badge="Peak within window" />
+            </MudItem>
 
-                    <MudPaper Class="summary-card chart-card pa-4" Outlined="true">
-                        <MudStack Spacing="2">
-                            <div class="section-header">
-                                <div>
-                                    <MudText Typo="Typo.subtitle1">Balance trend</MudText>
-                                    <MudText Typo="Typo.body2" Class="section-copy">
-                                        Daily end-of-day balances across the selected forecast window.
-                                    </MudText>
-                                </div>
-                            </div>
-                            <div class="chart-shell">
-                                <MudChart T="double"
-                                          ChartType="ChartType.Line"
-                                          ChartSeries="@_forecastChartSeries"
-                                          ChartLabels="@_forecastChartLabels"
-                                          ChartOptions="@_forecastChartOptions"
-                                          Width="90%"
-                                          Height="360px"
-                                          Class="forecast-chart"
-                                          MatchBoundsToSize="true" />
-                            </div>
-                        </MudStack>
-                    </MudPaper>
+            <MudItem xs="12" sm="6" xl="3">
+                <DashboardMetricCard Label="Minimum balance"
+                                     Icon="@Icons.Material.Filled.SouthEast"
+                                     Tone="warning"
+                                     Value="@FormatMoney(_forecastResult!.Summary.MinBalance)"
+                                     Detail="@FormatDate(_forecastResult.Summary.MinDate)"
+                                     Badge="Lowest point" />
+            </MudItem>
 
-                    <MudPaper Class="summary-card pa-4" Outlined="true">
-                        <MudStack Spacing="3">
-                            <div class="section-header">
-                                <div>
-                                    <MudText Typo="Typo.subtitle1">Transaction summary</MudText>
-                                    <MudText Typo="Typo.body2" Class="section-copy">
-                                        Upcoming forecasted transactions inside this window.
-                                    </MudText>
-                                </div>
-                            </div>
+            <MudItem xs="12" sm="6" xl="3">
+                <DashboardMetricCard Label="First below zero"
+                                     Icon="@Icons.Material.Filled.WarningAmber"
+                                     Tone="@HealthTone"
+                                     Value="@(_forecastResult!.Summary.FirstBelowZeroDate is DateOnly firstBelowZeroDate ? FormatDate(firstBelowZeroDate) : "Stays positive")"
+                                     Detail="@(_forecastResult.Summary.FirstBelowZeroDate is null ? "No below-zero day appears inside this forecast window." : HealthState.Detail)"
+                                     Badge="@HealthState.Badge" />
+            </MudItem>
+        </MudGrid>
 
-                            @if (UpcomingForecastOccurrences.Count == 0)
-                            {
-                                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-                                    No forecasted transactions fall inside this date range.
-                                </MudAlert>
-                            }
-                            else
-                            {
-                                <MudTable Items="UpcomingForecastRows" Dense="true" Hover="true" RowsPerPage="25">
-                                    <HeaderContent>
-                                        <MudTh>Date</MudTh>
-                                        <MudTh>Name</MudTh>
-                                        <MudTh>Source</MudTh>
-                                        <MudTh Style="text-align:right;">Amount</MudTh>
-                                        <MudTh Style="text-align:right;">Balance</MudTh>
-                                    </HeaderContent>
-                                    <RowTemplate>
-                                        <MudTd DataLabel="Date">@FormatDate(context.Occurrence.Date)</MudTd>
-                                        <MudTd DataLabel="Name">@context.Occurrence.Name</MudTd>
-                                        <MudTd DataLabel="Source">@GetOccurrenceSourceLabel(context.Occurrence)</MudTd>
-                                        <MudTd DataLabel="Amount"
-                                               Class="@GetAmountClass(context.Occurrence.Direction)"
-                                               Style="text-align:right;">
-                                            @FormatSignedMoney(context.Occurrence.Direction, context.Occurrence.Amount)
-                                        </MudTd>
-                                        <MudTd DataLabel="Balance"
-                                               Class="transaction-running-balance"
-                                               Style="text-align:right;">
-                                            @FormatMoney(context.RunningBalance)
-                                        </MudTd>
-                                    </RowTemplate>
-                                    <PagerContent>
-                                        <MudTablePager PageSizeOptions="new int[] { 25, 50 }" />
-                                    </PagerContent>
-                                </MudTable>
-                            }
-                        </MudStack>
-                    </MudPaper>
+        <MudPaper Class="surface-card chart-card" Elevation="0">
+            <BudgetSectionHeader Kicker="Balance trend"
+                                 Title="Forecast window"
+                                 Description="Daily end-of-day balances across the selected range, anchored by the latest saved balance checkpoint.">
+                <Actions>
+                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary">
+                        @(ForecastWindowDayCount == 0 ? "Window pending" : $"{ForecastWindowDayCount} day window")
+                    </MudChip>
+                </Actions>
+            </BudgetSectionHeader>
 
-                    <MudPaper Class="summary-card pa-4" Outlined="true">
-                        <MudStack Spacing="3">
-                            <div>
-                                <MudText Typo="Typo.subtitle1">Update balance</MudText>
-                                <MudText Typo="Typo.body2" Class="section-copy">
-                                    Reconcile the plan quickly here, then use the full workspace for recurring rules, planned transactions, and overrides.
-                                </MudText>
-                            </div>
-
-                            <EditForm Model="_balanceForm" OnValidSubmit="SaveBalanceAsync">
-                                <DataAnnotationsValidator />
-                                <MudGrid Class="compact-balance-grid">
-                                    <MudItem xs="12" md="4">
-                                        <MudNumericField T="decimal?"
-                                                         Label="Balance"
-                                                         Variant="Variant.Outlined"
-                                                         @bind-Value="_balanceForm.Amount" />
-                                    </MudItem>
-                                    <MudItem xs="12" md="4">
-                                        <MudDatePicker Label="Balance as of"
-                                                       Variant="Variant.Outlined"
-                                                       @bind-Date="_balanceForm.BalanceAsOfDate" />
-                                    </MudItem>
-                                    <MudItem xs="12" md="4" Class="compact-balance-actions">
-                                        <MudButton ButtonType="ButtonType.Submit"
-                                                   Variant="Variant.Filled"
-                                                   Color="Color.Primary"
-                                                   StartIcon="@Icons.Material.Filled.Save">
-                                            Save balance
-                                        </MudButton>
-                                    </MudItem>
-                                </MudGrid>
-                            </EditForm>
-                        </MudStack>
-                    </MudPaper>
-                }
-            </MudStack>
+            <ForecastTrendChart Points="@(_forecastResult?.DailyPoints ?? [])"
+                                Currency="@_selectedPlan.Currency"
+                                FirstBelowZeroDate="@_forecastResult?.Summary.FirstBelowZeroDate" />
         </MudPaper>
+
+        <MudPaper Class="surface-card transaction-card" Elevation="0">
+            <BudgetSectionHeader Kicker="Window transactions"
+                                 Title="Cash flow inside this forecast"
+                                 Description="Every forecasted occurrence currently inside the selected window, including the running balance after each one.">
+                <Actions>
+                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
+                        @($"{ForecastRows.Count} item(s)")
+                    </MudChip>
+                </Actions>
+            </BudgetSectionHeader>
+
+            @if (ForecastRows.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                    No forecasted transactions fall inside this date range.
+                </MudAlert>
+            }
+            else
+            {
+                <MudTable Items="ForecastRows"
+                          Dense="true"
+                          Hover="true"
+                          FixedHeader="true"
+                          Height="28rem"
+                          Class="transaction-table">
+                    <HeaderContent>
+                        <MudTh>Date</MudTh>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Source</MudTh>
+                        <MudTh Style="text-align:right;">Amount</MudTh>
+                        <MudTh Style="text-align:right;">Balance</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Date">@FormatDate(context.Occurrence.Date)</MudTd>
+                        <MudTd DataLabel="Name">@context.Occurrence.Name</MudTd>
+                        <MudTd DataLabel="Source">@GetOccurrenceSourceLabel(context.Occurrence)</MudTd>
+                        <MudTd DataLabel="Amount"
+                               Class="@GetAmountClass(context.Occurrence.Direction)"
+                               Style="text-align:right;">
+                            @FormatSignedMoney(context.Occurrence.Direction, context.Occurrence.Amount)
+                        </MudTd>
+                        <MudTd DataLabel="Balance"
+                               Class="transaction-running-balance"
+                               Style="text-align:right;">
+                            @FormatMoney(context.RunningBalance)
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+
+        <MudGrid Class="dashboard-secondary-grid">
+            <MudItem xs="12" lg="6">
+                <MudPaper Class="@($"surface-card health-card health-card-{HealthTone}")" Elevation="0">
+                    <BudgetSectionHeader Kicker="Balance health"
+                                         Title="@HealthState.Heading"
+                                         Description="@HealthState.Detail">
+                        <Actions>
+                            <MudChip T="string" Variant="Variant.Filled" Color="@GetHealthColor(HealthState.Tone)">
+                                @HealthState.Badge
+                            </MudChip>
+                        </Actions>
+                    </BudgetSectionHeader>
+
+                    <MudText Typo="Typo.body2" Class="muted-copy">
+                        Reconcile the latest balance from this dashboard, then jump into the workspace when you need to tune recurring rules or individual items.
+                    </MudText>
+
+                    <MudButton Href="@WorkspaceHref"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.OpenInNew">
+                        Open workspace
+                    </MudButton>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" lg="6">
+                <MudPaper Class="surface-card reconcile-card" Elevation="0">
+                    <BudgetSectionHeader Kicker="Reconcile"
+                                         Title="Update balance checkpoint"
+                                         Description="@($"Current checkpoint {FormatMoney(_selectedPlan.StartingBalance)} as of {FormatDate(_selectedPlan.BalanceAsOfDate)}.")" />
+
+                    <EditForm Model="_balanceForm" OnValidSubmit="SaveBalanceAsync">
+                        <DataAnnotationsValidator />
+
+                        <MudGrid Class="reconcile-form">
+                            <MudItem xs="12" md="6">
+                                <MudNumericField T="decimal?"
+                                                 Label="Balance"
+                                                 Variant="Variant.Outlined"
+                                                 @bind-Value="_balanceForm.Amount" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudDatePicker Label="Balance as of"
+                                               Variant="Variant.Outlined"
+                                               @bind-Date="_balanceForm.BalanceAsOfDate" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudButton ButtonType="ButtonType.Submit"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Save">
+                                    Save balance
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </EditForm>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
     }
 </MudStack>
 
-@if (_showCreatePlanModal)
-{
-    <div class="modal-backdrop">
-        <MudPaper Class="modal-card modal-card-wide pa-6">
-            <MudStack Spacing="3">
-                <MudStack Row="true" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h5">Create a new budget plan</MudText>
-                    <MudSpacer />
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Secondary" OnClick="CloseAllModals" />
-                </MudStack>
-                <MudText Typo="Typo.body2" Class="section-copy">
-                    Add another plan with its own currency, balance checkpoint, and time zone.
-                </MudText>
+<BudgetModalShell Visible="_showPlanModal"
+                  Wide="true"
+                  Title="@PlanModalTitle"
+                  Kicker="@PlanModalKicker"
+                  Description="@PlanModalDescription"
+                  OnClose="CloseAllModals">
+    <EditForm Model="_planForm" OnValidSubmit="SavePlanAsync">
+        <DataAnnotationsValidator />
 
-                <EditForm Model="_createForm" OnValidSubmit="CreatePlanAsync">
-                    <DataAnnotationsValidator />
+        <MudGrid Class="plan-modal-grid">
+            <MudItem xs="12" md="5">
+                <MudTextField T="string"
+                              Label="Plan name"
+                              Variant="Variant.Outlined"
+                              @bind-Value="_planForm.Name" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudTextField T="string"
+                              Label="Currency"
+                              Variant="Variant.Outlined"
+                              Disabled="@_isEditingPlan"
+                              @bind-Value="_planForm.Currency" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudNumericField T="decimal?"
+                                 Label="Starting balance"
+                                 Variant="Variant.Outlined"
+                                 @bind-Value="_planForm.StartingBalance" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudDatePicker Label="Balance as of"
+                               Variant="Variant.Outlined"
+                               @bind-Date="_planForm.BalanceAsOfDate" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField T="string"
+                              Label="Time zone"
+                              Variant="Variant.Outlined"
+                              @bind-Value="_planForm.TimeZoneId" />
+            </MudItem>
+        </MudGrid>
 
-                    <MudGrid>
-                        <MudItem xs="12" md="4">
-                            <MudTextField T="string" Label="Plan name" Variant="Variant.Outlined" @bind-Value="_createForm.Name" />
-                        </MudItem>
-                        <MudItem xs="12" md="2">
-                            <MudTextField T="string" Label="Currency" Variant="Variant.Outlined" @bind-Value="_createForm.Currency" />
-                        </MudItem>
-                        <MudItem xs="12" md="3">
-                            <MudNumericField T="decimal?" Label="Starting balance" Variant="Variant.Outlined" @bind-Value="_createForm.StartingBalance" />
-                        </MudItem>
-                        <MudItem xs="12" md="3">
-                            <MudDatePicker Label="Balance as of" Variant="Variant.Outlined" @bind-Date="_createForm.BalanceAsOfDate" />
-                        </MudItem>
-                        <MudItem xs="12">
-                            <MudTextField T="string" Label="Time zone" Variant="Variant.Outlined" @bind-Value="_createForm.TimeZoneId" />
-                        </MudItem>
-                    </MudGrid>
+        @if (_isEditingPlan)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                Currency remains fixed once a plan exists so all saved transactions and forecast data stay consistent.
+            </MudAlert>
+        }
 
-                    <MudStack Row="true" Class="modal-actions mt-4">
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
-                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle">
-                            Create plan
-                        </MudButton>
-                    </MudStack>
-                </EditForm>
-            </MudStack>
-        </MudPaper>
-    </div>
-}
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@(_isEditingPlan ? Icons.Material.Filled.Save : Icons.Material.Filled.AddCircle)">
+                @PlanModalSubmitText
+            </MudButton>
+        </MudStack>
+    </EditForm>
+</BudgetModalShell>
 
-@if (_showDeletePlanModal)
-{
-    <div class="modal-backdrop">
-        <MudPaper Class="modal-card pa-6">
-            <MudStack Spacing="3">
-                <MudText Typo="Typo.h5">Delete budget plan</MudText>
-                <MudText Typo="Typo.body2" Class="section-copy">
-                    Delete '@_deletePlanName'? This removes the plan, forecast history, recurring rules, planned transactions, and overrides from local storage.
-                </MudText>
+<BudgetModalShell Visible="_showDeletePlanModal"
+                  Title="Delete budget plan"
+                  Kicker="Destructive action"
+                  Description="@DeletePlanMessage"
+                  OnClose="CloseAllModals">
+    <MudStack Spacing="3">
+        <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+            This action cannot be undone.
+        </MudAlert>
 
-                <MudStack Row="true" Class="modal-actions">
-                    <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Error"
-                               StartIcon="@Icons.Material.Filled.Delete"
-                               OnClick="DeletePlanAsync">
-                        Delete plan
-                    </MudButton>
-                </MudStack>
-            </MudStack>
-        </MudPaper>
-    </div>
-}
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="DeletePlanAsync">
+                Delete plan
+            </MudButton>
+        </MudStack>
+    </MudStack>
+</BudgetModalShell>
+</div>

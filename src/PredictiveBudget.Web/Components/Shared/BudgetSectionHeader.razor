@@ -1,0 +1,42 @@
+<div class="@($"budget-section-header {Class}")">
+    <div class="budget-section-copy">
+        @if (!string.IsNullOrWhiteSpace(Kicker))
+        {
+            <MudText Typo="Typo.overline" Class="budget-section-kicker">@Kicker</MudText>
+        }
+
+        <MudText Typo="@TitleTypo" Class="budget-section-title">@Title</MudText>
+
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <MudText Typo="Typo.body2" Class="budget-section-description">@Description</MudText>
+        }
+    </div>
+
+    @if (Actions is not null)
+    {
+        <div class="budget-section-actions">
+            @Actions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+
+    [Parameter]
+    public string? Kicker { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public Typo TitleTypo { get; set; } = Typo.h6;
+}

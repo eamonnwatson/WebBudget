@@ -20,6 +20,15 @@ public sealed record UpdateStartingBalanceRequest(
     DateOnly BalanceAsOfDate);
 
 /// <summary>
+/// Captures editable top-level details for an existing budget plan.
+/// </summary>
+public sealed record UpdateBudgetPlanRequest(
+    string Name,
+    decimal StartingBalance,
+    DateOnly BalanceAsOfDate,
+    string? TimeZoneId);
+
+/// <summary>
 /// Captures a one-off cashflow entry that should be added to a plan.
 /// </summary>
 public sealed record AddPlannedTransactionRequest(

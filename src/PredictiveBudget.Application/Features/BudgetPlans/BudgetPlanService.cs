@@ -48,6 +48,21 @@ public sealed class BudgetPlanService(
         return plan;
     }
 
+    public async Task<BudgetPlan> UpdateAsync(Guid planId, UpdateBudgetPlanRequest request, CancellationToken ct)
+    {
+        var plan = await RequirePlanAsync(planId, ct);
+
+        string timeZoneId = string.IsNullOrWhiteSpace(request.TimeZoneId)
+            ? TimeZoneInfo.Local.Id
+            : request.TimeZoneId.Trim();
+
+        plan.UpdateDetails(NormalizeRequired(request.Name, nameof(request.Name)), timeZoneId);
+        plan.SetStartingBalance(new Money(request.StartingBalance, plan.Currency), request.BalanceAsOfDate);
+
+        await repository.SaveAsync(plan, ct);
+        return plan;
+    }
+
     public async Task DeleteAsync(Guid planId, CancellationToken ct)
     {
         _ = await RequirePlanAsync(planId, ct);

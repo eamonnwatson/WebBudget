@@ -1,0 +1,217 @@
+.forecast-trend-chart {
+    position: relative;
+    display: grid;
+    gap: 1rem;
+}
+
+.forecast-trend-chart__svg {
+    width: 100%;
+    height: auto;
+    min-height: 22rem;
+    overflow: visible;
+}
+
+.forecast-trend-chart__grid-line {
+    stroke: var(--chart-grid-line);
+    stroke-width: 1;
+}
+
+::deep .forecast-trend-chart__axis-label,
+::deep .forecast-trend-chart__x-label {
+    fill: var(--app-text-faint);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+::deep .forecast-trend-chart__x-label {
+    text-transform: uppercase;
+    dominant-baseline: hanging;
+}
+
+.forecast-trend-chart__zero-line {
+    stroke: var(--chart-zero-line);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 7;
+}
+
+.forecast-trend-chart__below-zero-line {
+    stroke: var(--mud-palette-error);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 8;
+}
+
+::deep .forecast-trend-chart__below-zero-label {
+    fill: var(--mud-palette-error);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.forecast-trend-chart__line-path {
+    fill: none;
+    stroke: var(--chart-line-color);
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 12px 22px var(--chart-line-glow));
+}
+
+.forecast-trend-chart__hit-area {
+    fill: transparent;
+    cursor: pointer;
+}
+
+::deep .forecast-trend-chart__marker-caption {
+    fill: var(--app-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+::deep .forecast-trend-chart__marker-value {
+    fill: var(--app-text-strong);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+::deep .forecast-trend-chart__marker-ring {
+    fill: var(--chart-marker-ring, rgba(53, 109, 255, 0.14));
+}
+
+::deep .forecast-trend-chart__marker-core {
+    fill: var(--chart-marker-core, var(--mud-palette-primary));
+}
+
+::deep .forecast-trend-chart__marker-high {
+    --chart-marker-core: var(--mud-palette-success);
+    --chart-marker-ring: rgba(15, 159, 120, 0.14);
+}
+
+::deep .forecast-trend-chart__marker-low {
+    --chart-marker-core: var(--mud-palette-warning);
+    --chart-marker-ring: rgba(245, 158, 11, 0.16);
+}
+
+::deep .forecast-trend-chart__marker-risk {
+    --chart-marker-core: var(--mud-palette-error);
+    --chart-marker-ring: rgba(220, 76, 100, 0.16);
+}
+
+.forecast-trend-chart__tooltip {
+    position: absolute;
+    min-width: 10.5rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 1rem;
+    border: 1px solid var(--app-border-strong);
+    background: var(--app-surface-card-strong);
+    box-shadow: var(--app-shadow-card);
+    pointer-events: none;
+    transform: translate(-50%, calc(-100% - 14px));
+}
+
+.forecast-trend-chart__tooltip-bottom {
+    transform: translate(-50%, 14px);
+}
+
+.forecast-trend-chart__tooltip-date {
+    color: var(--app-text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.forecast-trend-chart__tooltip-balance {
+    color: var(--app-text-strong);
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin-top: 0.2rem;
+}
+
+.forecast-trend-chart__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 0.9rem;
+}
+
+.forecast-trend-chart__summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border-radius: 1.2rem;
+    border: 1px solid var(--app-border-soft);
+    background: var(--app-surface-muted);
+}
+
+.forecast-trend-chart__summary-dot {
+    width: 0.72rem;
+    height: 0.72rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    margin-top: 0.35rem;
+}
+
+.forecast-trend-chart__summary-dot-high {
+    background: var(--mud-palette-success);
+}
+
+.forecast-trend-chart__summary-dot-low {
+    background: var(--mud-palette-warning);
+}
+
+.forecast-trend-chart__summary-dot-risk {
+    background: var(--mud-palette-error);
+}
+
+.forecast-trend-chart__summary-label {
+    color: var(--app-text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.forecast-trend-chart__summary-value {
+    color: var(--app-text-strong);
+    font-size: 0.96rem;
+    font-weight: 700;
+    margin-top: 0.15rem;
+}
+
+.forecast-trend-chart__summary-meta {
+    color: var(--app-text-faint);
+    font-size: 0.78rem;
+    margin-top: 0.1rem;
+}
+
+.forecast-trend-chart__empty {
+    min-height: 20rem;
+    border-radius: 1.5rem;
+    border: 1px dashed var(--app-border-strong);
+    background: var(--app-surface-muted);
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--app-text-muted);
+}
+
+.forecast-trend-chart__gradient-stop-top {
+    stop-color: var(--chart-area-top);
+}
+
+.forecast-trend-chart__gradient-stop-middle {
+    stop-color: var(--chart-area-middle);
+}
+
+.forecast-trend-chart__gradient-stop-bottom {
+    stop-color: var(--chart-area-bottom);
+}
+
+@media (max-width: 700px) {
+    .forecast-trend-chart__svg {
+        min-height: 19rem;
+    }
+
+    .forecast-trend-chart__tooltip {
+        min-width: 9rem;
+    }
+}

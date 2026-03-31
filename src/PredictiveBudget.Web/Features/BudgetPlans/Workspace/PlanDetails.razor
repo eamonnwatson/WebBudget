@@ -4,204 +4,322 @@
 @* Provides the full editing workspace for a single budget plan. *@
 <PageTitle>@(_plan?.Name ?? "Budget plan")</PageTitle>
 
+<div class="plan-workspace-page">
 @if (_isLoading)
 {
-    <div class="loading-state">
-        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-    </div>
+    <MudPaper Class="surface-card state-card" Elevation="0">
+        <div class="loading-state">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    </MudPaper>
 }
 else if (_plan is null)
 {
-    <MudPaper Class="pa-6">
+    <MudPaper Class="surface-card state-card" Elevation="0">
         <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
             This budget plan could not be found.
         </MudAlert>
-        <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">
+        <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">
             Back to dashboard
         </MudButton>
     </MudPaper>
 }
 else
 {
-    <MudStack Spacing="4">
-        <MudPaper Class="workspace-card pa-4">
-            <MudStack Spacing="3">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="header-actions">
-                    <MudButton Href="/" Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.ArrowBack">
-                        All plans
-                    </MudButton>
-                    <MudSpacer />
-                    <MudChip T="string" Value="@_plan.Currency" Variant="Variant.Outlined" Color="Color.Primary">
-                        @_plan.Currency
-                    </MudChip>
-                    <MudChip T="string" Value="@_plan.TimeZoneId" Variant="Variant.Outlined" Color="Color.Secondary">
-                        @_plan.TimeZoneId
-                    </MudChip>
-                </MudStack>
-
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="workspace-summary">
-                    <div>
-                        <MudText Typo="Typo.overline" Class="section-kicker">Plan workspace</MudText>
-                        <MudText Typo="Typo.h4">@_plan.Name</MudText>
-                        <MudText Typo="Typo.body2" Class="section-copy">
-                            Balance checkpoint @FormatMoney(_plan.StartingBalance) as of @FormatDate(_plan.BalanceAsOfDate).
-                        </MudText>
-                    </div>
-                    <MudSpacer />
-                    <MudStack Row="true" Class="stat-strip">
-                        <MudChip T="string" Value="@($"{_plan.RecurringRules.Count} rules")" Variant="Variant.Outlined" Color="Color.Primary">
-                            @_plan.RecurringRules.Count rules
-                        </MudChip>
-                        <MudChip T="string" Value="@($"{_plan.PlannedTransactions.Count} planned")" Variant="Variant.Outlined" Color="Color.Primary">
-                            @_plan.PlannedTransactions.Count planned
-                        </MudChip>
-                        <MudChip T="string" Value="@($"{_plan.Overrides.Count} overrides")" Variant="Variant.Outlined" Color="Color.Primary">
-                            @_plan.Overrides.Count overrides
-                        </MudChip>
-                    </MudStack>
-                </MudStack>
-            </MudStack>
-        </MudPaper>
-
-        <MudPaper Class="pa-5 panel-card">
-            <MudStack Spacing="3">
-                <div>
-                    <MudText Typo="Typo.h6">Subscription calendar</MudText>
-                    <MudText Typo="Typo.body2" Class="section-copy">
-                        Subscribe from iPhone to see forecasted transactions for the next 12 months with reminders.
-                    </MudText>
-                </div>
-
-                <MudTextField T="string"
-                              Label="Subscription URL"
-                              Variant="Variant.Outlined"
-                              Value="@(GetCalendarSubscriptionUrl() ?? string.Empty)"
-                              ReadOnly="true" />
-
-                <MudStack Row="true" Class="action-row">
-                    <MudButton Href="@GetCalendarSubscriptionUrl()"
-                               Target="_blank"
-                               Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Event">
-                        Open calendar feed
-                    </MudButton>
-                </MudStack>
-
-                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-                    On iPhone, open Calendar, choose Add Calendar, then Add Subscription Calendar and paste this URL.
-                </MudAlert>
-            </MudStack>
-        </MudPaper>
-
-        <MudGrid>
-            <MudItem xs="12" xl="6">
-                <MudPaper Class="pa-5 panel-card">
+    <MudStack Spacing="4" Class="plan-workspace-page">
+        <MudPaper Class="workspace-hero" Elevation="0">
+            <MudGrid>
+                <MudItem xs="12" lg="8">
                     <MudStack Spacing="3">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="table-toolbar">
-                            <div>
-                                <MudText Typo="Typo.h6">Recurring rules</MudText>
-                                <MudText Typo="Typo.body2" Class="section-copy">
-                                    Repeating income and expense patterns for this plan.
-                                </MudText>
-                            </div>
-                            <MudSpacer />
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenAddRecurringRuleModal">
-                                Add rule
+                        <div class="hero-chip-row">
+                            <MudButton Href="/"
+                                       Variant="Variant.Text"
+                                       Color="Color.Secondary"
+                                       StartIcon="@Icons.Material.Filled.ArrowBack">
+                                Dashboard
                             </MudButton>
-                        </MudStack>
+                            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary">
+                                @_plan.Currency
+                            </MudChip>
+                            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
+                                @_plan.TimeZoneId
+                            </MudChip>
+                        </div>
 
-                        @if (_plan.RecurringRules.Count == 0)
-                        {
-                            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-                                No recurring rules yet.
-                            </MudAlert>
-                        }
-                        else
-                        {
-                            <MudTable Items="_plan.RecurringRules.OrderBy(rule => rule.Name)" Dense="true" Hover="true">
-                                <HeaderContent>
-                                    <MudTh>Name</MudTh>
-                                    <MudTh>Pattern</MudTh>
-                                    <MudTh>Amount</MudTh>
-                                    <MudTh>Window</MudTh>
-                                    <MudTh></MudTh>
-                                </HeaderContent>
-                                <RowTemplate>
-                                    <MudTd DataLabel="Name">@context.Name</MudTd>
-                                    <MudTd DataLabel="Pattern">@DescribeRecurrence(context.Recurrence)</MudTd>
-                                    <MudTd DataLabel="Amount">@FormatSignedMoney(context.Direction, context.Amount)</MudTd>
-                                    <MudTd DataLabel="Window">@DescribeEffectiveWindow(context)</MudTd>
-                                    <MudTd Class="actions-cell">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditRecurringRuleModal(context.RuleId))" />
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => OpenDeleteRecurringRuleConfirmation(context.RuleId, context.Name))" />
-                                    </MudTd>
-                                </RowTemplate>
-                            </MudTable>
-                        }
+                        <div>
+                            <MudText Typo="Typo.overline" Class="muted-kicker">Plan workspace</MudText>
+                            <MudText Typo="Typo.h3" Class="workspace-title">@_plan.Name</MudText>
+                            <MudText Typo="Typo.body1" Class="muted-copy workspace-copy">
+                                Manage the recurring structure behind the forecast, reconcile the balance checkpoint, and keep overrides close to the rest of the plan.
+                            </MudText>
+                        </div>
+
+                        <div class="hero-chip-row">
+                            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary">
+                                @($"{_plan.RecurringRules.Count + _plan.PlannedTransactions.Count + _plan.Overrides.Count} total items")
+                            </MudChip>
+                            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
+                                Balance checkpoint @FormatDate(_plan.BalanceAsOfDate)
+                            </MudChip>
+                        </div>
                     </MudStack>
+                </MudItem>
+
+                <MudItem xs="12" lg="4">
+                    <div class="workspace-stat-grid">
+                        <div class="workspace-stat">
+                            <span class="workspace-stat__label">Recurring rules</span>
+                            <strong class="workspace-stat__value">@_plan.RecurringRules.Count</strong>
+                        </div>
+                        <div class="workspace-stat">
+                            <span class="workspace-stat__label">Planned items</span>
+                            <strong class="workspace-stat__value">@_plan.PlannedTransactions.Count</strong>
+                        </div>
+                        <div class="workspace-stat">
+                            <span class="workspace-stat__label">Overrides</span>
+                            <strong class="workspace-stat__value">@_plan.Overrides.Count</strong>
+                        </div>
+                        <div class="workspace-stat">
+                            <span class="workspace-stat__label">Starting balance</span>
+                            <strong class="workspace-stat__value">@FormatMoney(_plan.StartingBalance)</strong>
+                        </div>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudGrid Class="workspace-overview-grid">
+            <MudItem xs="12" lg="6">
+                <MudPaper Class="surface-card overview-card" Elevation="0">
+                    <BudgetSectionHeader Kicker="Plan settings"
+                                         Title="Identity and balance"
+                                         Description="Update the plan name and time zone, or reconcile the latest saved balance checkpoint.">
+                        <Actions>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Edit"
+                                       OnClick="OpenEditPlanModal">
+                                Edit plan
+                            </MudButton>
+                        </Actions>
+                    </BudgetSectionHeader>
+
+                    <div class="settings-summary-grid">
+                        <div class="settings-summary">
+                            <span class="settings-summary__label">Plan name</span>
+                            <strong class="settings-summary__value">@_plan.Name</strong>
+                        </div>
+                        <div class="settings-summary">
+                            <span class="settings-summary__label">Currency</span>
+                            <strong class="settings-summary__value">@_plan.Currency</strong>
+                        </div>
+                        <div class="settings-summary">
+                            <span class="settings-summary__label">Time zone</span>
+                            <strong class="settings-summary__value">@_plan.TimeZoneId</strong>
+                        </div>
+                        <div class="settings-summary">
+                            <span class="settings-summary__label">Balance checkpoint</span>
+                            <strong class="settings-summary__value">@FormatDate(_plan.BalanceAsOfDate)</strong>
+                        </div>
+                    </div>
+
+                    <EditForm Model="_balanceForm" OnValidSubmit="UpdateBalanceAsync">
+                        <DataAnnotationsValidator />
+
+                        <MudGrid Class="balance-form-grid">
+                            <MudItem xs="12" md="6">
+                                <MudNumericField T="decimal?"
+                                                 Label="Balance"
+                                                 Variant="Variant.Outlined"
+                                                 @bind-Value="_balanceForm.Amount" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudDatePicker Label="Balance as of"
+                                               Variant="Variant.Outlined"
+                                               @bind-Date="_balanceForm.BalanceAsOfDate" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudButton ButtonType="ButtonType.Submit"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Save">
+                                    Save balance
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </EditForm>
                 </MudPaper>
             </MudItem>
 
-            <MudItem xs="12" xl="6">
-                <MudPaper Class="pa-5 panel-card">
-                    <MudStack Spacing="3">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="table-toolbar">
-                            <div>
-                                <MudText Typo="Typo.h6">Planned transactions</MudText>
-                                <MudText Typo="Typo.body2" Class="section-copy">
-                                    One-off transactions that should affect the forecast.
-                                </MudText>
-                            </div>
-                            <MudSpacer />
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenAddPlannedTransactionModal">
-                                Add transaction
+            <MudItem xs="12" lg="6">
+                <MudPaper Class="surface-card overview-card" Elevation="0">
+                    <BudgetSectionHeader Kicker="Calendar feed"
+                                         Title="Subscription calendar"
+                                         Description="Subscribe from iPhone or another calendar client to preview forecasted transactions for the next 12 months with reminders.">
+                        <Actions>
+                            <MudButton Href="@GetCalendarSubscriptionUrl()"
+                                       Target="_blank"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Event">
+                                Open feed
                             </MudButton>
-                        </MudStack>
+                        </Actions>
+                    </BudgetSectionHeader>
 
-                        @if (_plan.PlannedTransactions.Count == 0)
-                        {
-                            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-                                No planned transactions yet.
-                            </MudAlert>
-                        }
-                        else
-                        {
-                            <MudTable Items="_plan.PlannedTransactions.OrderBy(transaction => transaction.Date).ThenBy(transaction => transaction.Name)" Dense="true" Hover="true">
-                                <HeaderContent>
-                                    <MudTh>Date</MudTh>
-                                    <MudTh>Name</MudTh>
-                                    <MudTh>Direction</MudTh>
-                                    <MudTh>Amount</MudTh>
-                                    <MudTh></MudTh>
-                                </HeaderContent>
-                                <RowTemplate>
-                                    <MudTd DataLabel="Date">@FormatDate(context.Date)</MudTd>
-                                    <MudTd DataLabel="Name">@context.Name</MudTd>
-                                    <MudTd DataLabel="Direction">@context.Direction</MudTd>
-                                    <MudTd DataLabel="Amount">@FormatSignedMoney(context.Direction, context.Amount)</MudTd>
-                                    <MudTd Class="actions-cell">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditPlannedTransactionModal(context.TransactionId))" />
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => OpenDeletePlannedTransactionConfirmation(context.TransactionId, context.Name))" />
-                                    </MudTd>
-                                </RowTemplate>
-                            </MudTable>
-                        }
-                    </MudStack>
+                    <MudTextField T="string"
+                                  Label="Subscription URL"
+                                  Variant="Variant.Outlined"
+                                  Value="@(GetCalendarSubscriptionUrl() ?? string.Empty)"
+                                  ReadOnly="true" />
+
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                        On iPhone, open Calendar, choose Add Calendar, then Add Subscription Calendar and paste this URL.
+                    </MudAlert>
                 </MudPaper>
             </MudItem>
         </MudGrid>
 
-        <MudPaper Class="pa-5 panel-card">
-            <MudStack Spacing="3">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="table-toolbar">
-                    <div>
-                        <MudText Typo="Typo.h6">Occurrence overrides</MudText>
-                        <MudText Typo="Typo.body2" Class="section-copy">
-                            Override or skip generated occurrences without leaving the workspace.
-                        </MudText>
-                    </div>
-                    <MudSpacer />
+        <MudGrid Class="workspace-section-grid">
+            <MudItem xs="12" xl="6">
+                <MudPaper Class="surface-card table-card" Elevation="0">
+                    <BudgetSectionHeader Kicker="Structure"
+                                         Title="Recurring rules"
+                                         Description="Repeating income and expense patterns for this plan.">
+                        <Actions>
+                            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
+                                @($"{_plan.RecurringRules.Count} rule(s)")
+                            </MudChip>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="OpenAddRecurringRuleModal">
+                                Add rule
+                            </MudButton>
+                        </Actions>
+                    </BudgetSectionHeader>
+
+                    @if (_plan.RecurringRules.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                            No recurring rules yet.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudTable Items="_plan.RecurringRules.OrderBy(rule => rule.Name)"
+                                  Dense="true"
+                                  Hover="true"
+                                  FixedHeader="true"
+                                  Height="24rem">
+                            <HeaderContent>
+                                <MudTh>Rule</MudTh>
+                                <MudTh>Cadence</MudTh>
+                                <MudTh>Amount</MudTh>
+                                <MudTh>Window</MudTh>
+                                <MudTh>Status</MudTh>
+                                <MudTh></MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Rule">@context.Name</MudTd>
+                                <MudTd DataLabel="Cadence">@DescribeRecurrence(context.Recurrence)</MudTd>
+                                <MudTd DataLabel="Amount">@FormatSignedMoney(context.Direction, context.Amount)</MudTd>
+                                <MudTd DataLabel="Window">@DescribeEffectiveWindow(context)</MudTd>
+                                <MudTd DataLabel="Status">
+                                    <MudChip T="string"
+                                             Variant="Variant.Outlined"
+                                             Color="@(context.IsActive ? Color.Success : Color.Warning)">
+                                        @(context.IsActive ? "Active" : "Paused")
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd Class="actions-cell">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Color="Color.Primary"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenEditRecurringRuleModal(context.RuleId))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenDeleteRecurringRuleConfirmation(context.RuleId, context.Name))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" xl="6">
+                <MudPaper Class="surface-card table-card" Elevation="0">
+                    <BudgetSectionHeader Kicker="Structure"
+                                         Title="Planned transactions"
+                                         Description="One-off transactions that should affect the forecast.">
+                        <Actions>
+                            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
+                                @($"{_plan.PlannedTransactions.Count} transaction(s)")
+                            </MudChip>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="OpenAddPlannedTransactionModal">
+                                Add transaction
+                            </MudButton>
+                        </Actions>
+                    </BudgetSectionHeader>
+
+                    @if (_plan.PlannedTransactions.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                            No planned transactions yet.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudTable Items="_plan.PlannedTransactions.OrderBy(transaction => transaction.Date).ThenBy(transaction => transaction.Name)"
+                                  Dense="true"
+                                  Hover="true"
+                                  FixedHeader="true"
+                                  Height="24rem">
+                            <HeaderContent>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Name</MudTh>
+                                <MudTh>Direction</MudTh>
+                                <MudTh>Amount</MudTh>
+                                <MudTh></MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Date">@FormatDate(context.Date)</MudTd>
+                                <MudTd DataLabel="Name">@context.Name</MudTd>
+                                <MudTd DataLabel="Direction">
+                                    <MudChip T="string" Variant="Variant.Outlined" Color="@GetDirectionColor(context.Direction)">
+                                        @context.Direction
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="Amount">@FormatSignedMoney(context.Direction, context.Amount)</MudTd>
+                                <MudTd Class="actions-cell">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Color="Color.Primary"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenEditPlannedTransactionModal(context.TransactionId))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenDeletePlannedTransactionConfirmation(context.TransactionId, context.Name))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Class="surface-card table-card" Elevation="0">
+            <BudgetSectionHeader Kicker="Adjustments"
+                                 Title="Occurrence overrides"
+                                 Description="Override or skip generated occurrences without leaving the workspace.">
+                <Actions>
+                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
+                        @($"{_plan.Overrides.Count} override(s)")
+                    </MudChip>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Add"
@@ -209,292 +327,348 @@ else
                                OnClick="OpenAddOverrideModal">
                         Add override
                     </MudButton>
-                </MudStack>
+                </Actions>
+            </BudgetSectionHeader>
 
-                @if (_plan.Overrides.Count == 0)
-                {
-                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-                        No occurrence overrides yet.
-                    </MudAlert>
-                }
-                else
-                {
-                    <MudTable Items="_plan.Overrides.OrderBy(overrideEntry => overrideEntry.OriginalDate)" Dense="true" Hover="true">
-                        <HeaderContent>
-                            <MudTh>Source</MudTh>
-                            <MudTh>Original date</MudTh>
-                            <MudTh>Action</MudTh>
-                            <MudTh>Effect</MudTh>
-                            <MudTh></MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="Source">@GetOverrideSourceLabel(context)</MudTd>
-                            <MudTd DataLabel="Original date">@FormatDate(context.OriginalDate)</MudTd>
-                            <MudTd DataLabel="Action">@context.Action</MudTd>
-                            <MudTd DataLabel="Effect">@DescribeOverride(context)</MudTd>
-                            <MudTd Class="actions-cell">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditOverrideModal(context.OverrideId))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => OpenDeleteOverrideConfirmation(context.OverrideId, GetOverrideSourceLabel(context)))" />
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                }
-            </MudStack>
+            @if (_plan.Overrides.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                    No occurrence overrides yet.
+                </MudAlert>
+            }
+            else
+            {
+                <MudTable Items="_plan.Overrides.OrderBy(overrideEntry => overrideEntry.OriginalDate)"
+                          Dense="true"
+                          Hover="true"
+                          FixedHeader="true"
+                          Height="24rem">
+                    <HeaderContent>
+                        <MudTh>Source</MudTh>
+                        <MudTh>Original date</MudTh>
+                        <MudTh>Action</MudTh>
+                        <MudTh>Effect</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Source">@GetOverrideSourceLabel(context)</MudTd>
+                        <MudTd DataLabel="Original date">@FormatDate(context.OriginalDate)</MudTd>
+                        <MudTd DataLabel="Action">
+                            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary">
+                                @context.Action
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Effect">@DescribeOverride(context)</MudTd>
+                        <MudTd Class="actions-cell">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OpenEditOverrideModal(context.OverrideId))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OpenDeleteOverrideConfirmation(context.OverrideId, GetOverrideSourceLabel(context)))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
         </MudPaper>
-
     </MudStack>
 }
 
-@if (_showRecurringRuleModal)
-{
-    <div class="modal-backdrop">
-        <MudPaper Class="modal-card compact-rule-modal pa-4">
-            <MudStack Spacing="2">
-                <MudStack Row="true" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h5">@RecurringRuleModalTitle</MudText>
-                    <MudSpacer />
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Secondary" OnClick="CloseAllModals" />
-                </MudStack>
+<BudgetModalShell Visible="_showPlanSettingsModal"
+                  Wide="true"
+                  Title="Edit plan"
+                  Kicker="Plan settings"
+                  Description="Update the top-level plan details without leaving the workspace."
+                  OnClose="CloseAllModals">
+    <EditForm Model="_planForm" OnValidSubmit="SavePlanSettingsAsync">
+        <DataAnnotationsValidator />
 
-                <EditForm Model="_recurringRuleForm" OnValidSubmit="SaveRecurringRuleAsync">
-                    <DataAnnotationsValidator />
-                    <MudGrid Spacing="2" Class="compact-form-grid">
-                        <MudItem xs="12" md="6">
-                            <MudTextField T="string" Label="Rule name" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Name" />
-                        </MudItem>
-                        <MudItem xs="12" md="3">
-                            <MudSelect T="TransactionDirection" Label="Direction" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Direction">
-                                <MudSelectItem Value="TransactionDirection.Inflow">Inflow</MudSelectItem>
-                                <MudSelectItem Value="TransactionDirection.Outflow">Outflow</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" md="3">
-                            <MudNumericField T="decimal?" Label="Amount" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Amount" />
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudSelect T="RecurrencePattern" Label="Pattern" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Pattern">
-                                <MudSelectItem Value="RecurrencePattern.Weekly">Weekly</MudSelectItem>
-                                <MudSelectItem Value="RecurrencePattern.MonthlyByDayOfMonth">Monthly</MudSelectItem>
-                                <MudSelectItem Value="RecurrencePattern.YearlyByMonthsAndDay">Yearly</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudDatePicker Label="Effective start" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Date="_recurringRuleForm.EffectiveStartDate" />
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudDatePicker Label="Effective end" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Date="_recurringRuleForm.EffectiveEndDate" />
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudSelect T="BusinessDayAdjustment" Label="Business day adjustment" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.BusinessDayAdjustment">
-                                <MudSelectItem Value="BusinessDayAdjustment.None">None</MudSelectItem>
-                                <MudSelectItem Value="BusinessDayAdjustment.NextBusinessDay">Next business day</MudSelectItem>
-                                <MudSelectItem Value="BusinessDayAdjustment.PreviousBusinessDay">Previous business day</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" md="6">
-                            <MudNumericField T="int?" Label="Alert days before" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.DefaultAlertDaysBefore" />
-                        </MudItem>
-                        <MudItem xs="12" md="6" Class="compact-toggle-item">
-                            <MudCheckBox T="bool" Label="Rule is active" @bind-Value="_recurringRuleForm.IsActive" />
-                        </MudItem>
-                    </MudGrid>
+        <MudGrid Class="modal-form-grid">
+            <MudItem xs="12" md="5">
+                <MudTextField T="string"
+                              Label="Plan name"
+                              Variant="Variant.Outlined"
+                              @bind-Value="_planForm.Name" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudTextField T="string"
+                              Label="Currency"
+                              Variant="Variant.Outlined"
+                              Disabled="true"
+                              @bind-Value="_planForm.Currency" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudNumericField T="decimal?"
+                                 Label="Starting balance"
+                                 Variant="Variant.Outlined"
+                                 @bind-Value="_planForm.StartingBalance" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudDatePicker Label="Balance as of"
+                               Variant="Variant.Outlined"
+                               @bind-Date="_planForm.BalanceAsOfDate" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField T="string"
+                              Label="Time zone"
+                              Variant="Variant.Outlined"
+                              @bind-Value="_planForm.TimeZoneId" />
+            </MudItem>
+        </MudGrid>
 
-                    @if (_recurringRuleForm.Pattern == RecurrencePattern.Weekly)
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+            Currency remains fixed once a plan exists so saved transactions and forecast balances stay internally consistent.
+        </MudAlert>
+
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Save">
+                Save changes
+            </MudButton>
+        </MudStack>
+    </EditForm>
+</BudgetModalShell>
+
+<BudgetModalShell Visible="_showRecurringRuleModal"
+                  Title="@RecurringRuleModalTitle"
+                  Kicker="Recurring rules"
+                  Description="Define the cadence, amount, and effective window for this repeating cash-flow rule."
+                  Wide="true"
+                  OnClose="CloseAllModals">
+    <EditForm Model="_recurringRuleForm" OnValidSubmit="SaveRecurringRuleAsync">
+        <DataAnnotationsValidator />
+
+        <MudGrid Spacing="2" Class="modal-form-grid">
+            <MudItem xs="12" md="6">
+                <MudTextField T="string" Label="Rule name" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Name" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudSelect T="TransactionDirection" Label="Direction" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Direction">
+                    <MudSelectItem Value="TransactionDirection.Inflow">Inflow</MudSelectItem>
+                    <MudSelectItem Value="TransactionDirection.Outflow">Outflow</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudNumericField T="decimal?" Label="Amount" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Amount" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSelect T="RecurrencePattern" Label="Pattern" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.Pattern">
+                    <MudSelectItem Value="RecurrencePattern.Weekly">Weekly</MudSelectItem>
+                    <MudSelectItem Value="RecurrencePattern.MonthlyByDayOfMonth">Monthly</MudSelectItem>
+                    <MudSelectItem Value="RecurrencePattern.YearlyByMonthsAndDay">Yearly</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDatePicker Label="Effective start" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Date="_recurringRuleForm.EffectiveStartDate" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDatePicker Label="Effective end" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Date="_recurringRuleForm.EffectiveEndDate" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSelect T="BusinessDayAdjustment" Label="Business day adjustment" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.BusinessDayAdjustment">
+                    <MudSelectItem Value="BusinessDayAdjustment.None">None</MudSelectItem>
+                    <MudSelectItem Value="BusinessDayAdjustment.NextBusinessDay">Next business day</MudSelectItem>
+                    <MudSelectItem Value="BusinessDayAdjustment.PreviousBusinessDay">Previous business day</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="int?" Label="Alert days before" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.DefaultAlertDaysBefore" />
+            </MudItem>
+            <MudItem xs="12" md="4" Class="toggle-item">
+                <MudCheckBox T="bool" Label="Rule is active" @bind-Value="_recurringRuleForm.IsActive" />
+            </MudItem>
+        </MudGrid>
+
+        @if (_recurringRuleForm.Pattern == RecurrencePattern.Weekly)
+        {
+            <MudPaper Class="modal-subsection" Elevation="0">
+                <MudText Typo="Typo.subtitle2">Weekly settings</MudText>
+                <MudNumericField T="int?" Label="Repeat every n weeks" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" @bind-Value="_recurringRuleForm.IntervalWeeks" />
+                <MudGrid Spacing="1" Class="mt-1">
+                    @foreach (var weekday in WeekdayOptions)
                     {
-                        <MudPaper Class="recurrence-panel compact-recurrence-panel pa-3 mt-3" Outlined="true">
-                            <MudText Typo="Typo.subtitle2">Weekly settings</MudText>
-                            <MudNumericField T="int?" Label="Repeat every n weeks" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" @bind-Value="_recurringRuleForm.IntervalWeeks" />
-                            <MudGrid Spacing="1" Class="mt-1">
-                                @foreach (var weekday in WeekdayOptions)
-                                {
-                                    <MudItem xs="6" sm="4">
-                                        <MudCheckBox T="bool"
-                                                     Label="@weekday.ToString()"
-                                                     Value="@IsWeekdaySelected(weekday)"
-                                                     ValueChanged="@((bool value) => SetWeekday(weekday, value))" />
-                                    </MudItem>
-                                }
-                            </MudGrid>
-                        </MudPaper>
+                        <MudItem xs="6" sm="4">
+                            <MudCheckBox T="bool"
+                                         Label="@weekday.ToString()"
+                                         Value="@IsWeekdaySelected(weekday)"
+                                         ValueChanged="@((bool value) => SetWeekday(weekday, value))" />
+                        </MudItem>
                     }
-                    else if (_recurringRuleForm.Pattern == RecurrencePattern.MonthlyByDayOfMonth)
+                </MudGrid>
+            </MudPaper>
+        }
+        else if (_recurringRuleForm.Pattern == RecurrencePattern.MonthlyByDayOfMonth)
+        {
+            <MudPaper Class="modal-subsection" Elevation="0">
+                <MudText Typo="Typo.subtitle2">Monthly settings</MudText>
+                <MudGrid Spacing="2" Class="mt-1">
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="int?" Label="Repeat every n months" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.IntervalMonths" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.DayOfMonth" />
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        }
+        else
+        {
+            <MudPaper Class="modal-subsection" Elevation="0">
+                <MudText Typo="Typo.subtitle2">Yearly settings</MudText>
+                <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" @bind-Value="_recurringRuleForm.DayOfMonth" />
+                <MudGrid Spacing="1" Class="mt-1">
+                    @foreach (var month in MonthOptions)
                     {
-                        <MudPaper Class="recurrence-panel compact-recurrence-panel pa-3 mt-3" Outlined="true">
-                            <MudText Typo="Typo.subtitle2">Monthly settings</MudText>
-                            <MudGrid Spacing="2" Class="mt-1">
-                                <MudItem xs="12" sm="6">
-                                    <MudNumericField T="int?" Label="Repeat every n months" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.IntervalMonths" />
-                                </MudItem>
-                                <MudItem xs="12" sm="6">
-                                    <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_recurringRuleForm.DayOfMonth" />
-                                </MudItem>
-                            </MudGrid>
-                        </MudPaper>
+                        <MudItem xs="6" sm="4">
+                            <MudCheckBox T="bool"
+                                         Label="@month.Label"
+                                         Value="@IsMonthSelected(month.Number)"
+                                         ValueChanged="@((bool value) => SetMonth(month.Number, value))" />
+                        </MudItem>
                     }
-                    else
+                </MudGrid>
+            </MudPaper>
+        }
+
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">
+                Save rule
+            </MudButton>
+        </MudStack>
+    </EditForm>
+</BudgetModalShell>
+
+<BudgetModalShell Visible="_showPlannedTransactionModal"
+                  Title="@PlannedTransactionModalTitle"
+                  Kicker="Planned transactions"
+                  Description="Add or update a one-off transaction that should influence the forecast."
+                  OnClose="CloseAllModals">
+    <EditForm Model="_plannedTransactionForm" OnValidSubmit="SavePlannedTransactionAsync">
+        <DataAnnotationsValidator />
+
+        <MudGrid Class="modal-form-grid">
+            <MudItem xs="12" sm="6">
+                <MudDatePicker Label="Transaction date" Variant="Variant.Outlined" @bind-Date="_plannedTransactionForm.Date" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="TransactionDirection" Label="Direction" Variant="Variant.Outlined" @bind-Value="_plannedTransactionForm.Direction">
+                    <MudSelectItem Value="TransactionDirection.Inflow">Inflow</MudSelectItem>
+                    <MudSelectItem Value="TransactionDirection.Outflow">Outflow</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField T="string" Label="Description" Variant="Variant.Outlined" @bind-Value="_plannedTransactionForm.Name" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudNumericField T="decimal?" Label="Amount" Variant="Variant.Outlined" @bind-Value="_plannedTransactionForm.Amount" />
+            </MudItem>
+        </MudGrid>
+
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">
+                Save transaction
+            </MudButton>
+        </MudStack>
+    </EditForm>
+</BudgetModalShell>
+
+<BudgetModalShell Visible="_showOverrideModal"
+                  Title="@OverrideModalTitle"
+                  Kicker="Occurrence overrides"
+                  Description="Replace, skip, or move a generated occurrence without deleting the source rule or transaction."
+                  OnClose="CloseAllModals">
+    <EditForm Model="_overrideForm" OnValidSubmit="SaveOverrideAsync">
+        <DataAnnotationsValidator />
+
+        <MudGrid Class="modal-form-grid">
+            <MudItem xs="12" sm="6">
+                <MudSelect T="OccurrenceSource"
+                           Label="Source type"
+                           Variant="Variant.Outlined"
+                           Value="_overrideForm.Source"
+                           ValueChanged="OnOverrideSourceChanged">
+                    <MudSelectItem Value="OccurrenceSource.RecurringRule">Recurring rule</MudSelectItem>
+                    <MudSelectItem Value="OccurrenceSource.PlannedTransaction">Planned transaction</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string" Label="Source item" Variant="Variant.Outlined" @bind-Value="_overrideForm.SourceId">
+                    @foreach (var option in GetSourceOptions(_overrideForm.Source))
                     {
-                        <MudPaper Class="recurrence-panel compact-recurrence-panel pa-3 mt-3" Outlined="true">
-                            <MudText Typo="Typo.subtitle2">Yearly settings</MudText>
-                            <MudNumericField T="int?" Label="Day of month" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" @bind-Value="_recurringRuleForm.DayOfMonth" />
-                            <MudGrid Spacing="1" Class="mt-1">
-                                @foreach (var month in MonthOptions)
-                                {
-                                    <MudItem xs="6" sm="4">
-                                        <MudCheckBox T="bool"
-                                                     Label="@month.Label"
-                                                     Value="@IsMonthSelected(month.Number)"
-                                                     ValueChanged="@((bool value) => SetMonth(month.Number, value))" />
-                                    </MudItem>
-                                }
-                            </MudGrid>
-                        </MudPaper>
+                        <MudSelectItem Value="@option.Id">@option.Label</MudSelectItem>
                     }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker Label="Original occurrence date" Variant="Variant.Outlined" @bind-Date="_overrideForm.OriginalDate" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="OverrideAction" Label="Action" Variant="Variant.Outlined" @bind-Value="_overrideForm.Action">
+                    <MudSelectItem Value="OverrideAction.Skip">Skip</MudSelectItem>
+                    <MudSelectItem Value="OverrideAction.MoveToDate">Move to date</MudSelectItem>
+                    <MudSelectItem Value="OverrideAction.ReplaceAmount">Replace amount</MudSelectItem>
+                    <MudSelectItem Value="OverrideAction.ReplaceName">Replace name</MudSelectItem>
+                </MudSelect>
+            </MudItem>
 
-                    <MudStack Row="true" Class="modal-actions mt-3">
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
-                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">
-                            Save rule
-                        </MudButton>
-                    </MudStack>
-                </EditForm>
-            </MudStack>
-        </MudPaper>
-    </div>
-}
+            @if (_overrideForm.Action == OverrideAction.MoveToDate)
+            {
+                <MudItem xs="12">
+                    <MudDatePicker Label="New date" Variant="Variant.Outlined" @bind-Date="_overrideForm.NewDate" />
+                </MudItem>
+            }
+            else if (_overrideForm.Action == OverrideAction.ReplaceAmount)
+            {
+                <MudItem xs="12">
+                    <MudNumericField T="decimal?" Label="New amount" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewAmount" />
+                </MudItem>
+            }
+            else if (_overrideForm.Action == OverrideAction.ReplaceName)
+            {
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="New name" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewName" />
+                </MudItem>
+            }
+        </MudGrid>
 
-@if (_showPlannedTransactionModal)
-{
-    <div class="modal-backdrop">
-        <MudPaper Class="modal-card pa-6">
-            <MudStack Spacing="3">
-                <MudStack Row="true" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h5">@PlannedTransactionModalTitle</MudText>
-                    <MudSpacer />
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Secondary" OnClick="CloseAllModals" />
-                </MudStack>
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="@string.IsNullOrWhiteSpace(_overrideForm.SourceId)">
+                Save override
+            </MudButton>
+        </MudStack>
+    </EditForm>
+</BudgetModalShell>
 
-                <EditForm Model="_plannedTransactionForm" OnValidSubmit="SavePlannedTransactionAsync">
-                    <DataAnnotationsValidator />
-                    <MudGrid>
-                        <MudItem xs="12" sm="6">
-                            <MudDatePicker Label="Transaction date" Variant="Variant.Outlined" @bind-Date="_plannedTransactionForm.Date" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudSelect T="TransactionDirection" Label="Direction" Variant="Variant.Outlined" @bind-Value="_plannedTransactionForm.Direction">
-                                <MudSelectItem Value="TransactionDirection.Inflow">Inflow</MudSelectItem>
-                                <MudSelectItem Value="TransactionDirection.Outflow">Outflow</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12">
-                            <MudTextField T="string" Label="Description" Variant="Variant.Outlined" @bind-Value="_plannedTransactionForm.Name" />
-                        </MudItem>
-                        <MudItem xs="12">
-                            <MudNumericField T="decimal?" Label="Amount" Variant="Variant.Outlined" @bind-Value="_plannedTransactionForm.Amount" />
-                        </MudItem>
-                    </MudGrid>
+<BudgetModalShell Visible="_showDeleteModal"
+                  Title="@_deleteModalTitle"
+                  Kicker="Delete item"
+                  Description="@_deleteModalMessage"
+                  OnClose="CloseAllModals">
+    <MudStack Spacing="3">
+        <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+            This action cannot be undone.
+        </MudAlert>
 
-                    <MudStack Row="true" Class="modal-actions mt-4">
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
-                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">
-                            Save transaction
-                        </MudButton>
-                    </MudStack>
-                </EditForm>
-            </MudStack>
-        </MudPaper>
-    </div>
-}
-
-@if (_showOverrideModal)
-{
-    <div class="modal-backdrop">
-        <MudPaper Class="modal-card pa-6">
-            <MudStack Spacing="3">
-                <MudStack Row="true" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h5">@OverrideModalTitle</MudText>
-                    <MudSpacer />
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Secondary" OnClick="CloseAllModals" />
-                </MudStack>
-
-                <EditForm Model="_overrideForm" OnValidSubmit="SaveOverrideAsync">
-                    <DataAnnotationsValidator />
-                    <MudGrid>
-                        <MudItem xs="12" sm="6">
-                            <MudSelect T="OccurrenceSource"
-                                       Label="Source type"
-                                       Variant="Variant.Outlined"
-                                       Value="_overrideForm.Source"
-                                       ValueChanged="OnOverrideSourceChanged">
-                                <MudSelectItem Value="OccurrenceSource.RecurringRule">Recurring rule</MudSelectItem>
-                                <MudSelectItem Value="OccurrenceSource.PlannedTransaction">Planned transaction</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudSelect T="string" Label="Source item" Variant="Variant.Outlined" @bind-Value="_overrideForm.SourceId">
-                                @foreach (var option in GetSourceOptions(_overrideForm.Source))
-                                {
-                                    <MudSelectItem Value="@option.Id">@option.Label</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudDatePicker Label="Original occurrence date" Variant="Variant.Outlined" @bind-Date="_overrideForm.OriginalDate" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudSelect T="OverrideAction" Label="Action" Variant="Variant.Outlined" @bind-Value="_overrideForm.Action">
-                                <MudSelectItem Value="OverrideAction.Skip">Skip</MudSelectItem>
-                                <MudSelectItem Value="OverrideAction.MoveToDate">Move to date</MudSelectItem>
-                                <MudSelectItem Value="OverrideAction.ReplaceAmount">Replace amount</MudSelectItem>
-                                <MudSelectItem Value="OverrideAction.ReplaceName">Replace name</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-
-                        @if (_overrideForm.Action == OverrideAction.MoveToDate)
-                        {
-                            <MudItem xs="12">
-                                <MudDatePicker Label="New date" Variant="Variant.Outlined" @bind-Date="_overrideForm.NewDate" />
-                            </MudItem>
-                        }
-                        else if (_overrideForm.Action == OverrideAction.ReplaceAmount)
-                        {
-                            <MudItem xs="12">
-                                <MudNumericField T="decimal?" Label="New amount" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewAmount" />
-                            </MudItem>
-                        }
-                        else if (_overrideForm.Action == OverrideAction.ReplaceName)
-                        {
-                            <MudItem xs="12">
-                                <MudTextField T="string" Label="New name" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewName" />
-                            </MudItem>
-                        }
-                    </MudGrid>
-
-                    <MudStack Row="true" Class="modal-actions mt-4">
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
-                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@string.IsNullOrWhiteSpace(_overrideForm.SourceId)">
-                            Save override
-                        </MudButton>
-                    </MudStack>
-                </EditForm>
-            </MudStack>
-        </MudPaper>
-    </div>
-}
-
-@if (_showDeleteModal)
-{
-    <div class="modal-backdrop">
-        <MudPaper Class="modal-card pa-6">
-            <MudStack Spacing="3">
-                <MudText Typo="Typo.h5">@_deleteModalTitle</MudText>
-                <MudText Typo="Typo.body2" Class="section-copy">@_deleteModalMessage</MudText>
-                <MudStack Row="true" Class="modal-actions">
-                    <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
-                    <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="ConfirmDeleteAsync">
-                        Delete
-                    </MudButton>
-                </MudStack>
-            </MudStack>
-        </MudPaper>
-    </div>
-}
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="ConfirmDeleteAsync">
+                Delete
+            </MudButton>
+        </MudStack>
+    </MudStack>
+</BudgetModalShell>
+</div>

@@ -51,6 +51,18 @@ public sealed class BudgetPlan
         BalanceAsOfDate = asOfDate;
     }
 
+    public void UpdateDetails(string name, string timeZoneId)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("Plan name is required.");
+
+        if (string.IsNullOrWhiteSpace(timeZoneId))
+            throw new InvalidOperationException("Time zone is required.");
+
+        Name = name.Trim();
+        TimeZoneId = timeZoneId.Trim();
+    }
+
     public void SetCalendarSubscriptionToken(string token)
     {
         if (string.IsNullOrWhiteSpace(token))

@@ -146,6 +146,13 @@ internal static class ReflectionTestHelper
         property.SetValue(target, value);
     }
 
+    public static T GetPropertyValue<T>(object target, string propertyName)
+    {
+        var property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Property '{propertyName}' was not found.");
+        return (T)(property.GetValue(target) ?? throw new InvalidOperationException($"Property '{propertyName}' was null."));
+    }
+
     public static void InvokeVoid(object target, string methodName, params object?[]? parameters)
     {
         var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic)

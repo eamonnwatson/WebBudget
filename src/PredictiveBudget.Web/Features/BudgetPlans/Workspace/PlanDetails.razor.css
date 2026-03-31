@@ -1,3 +1,123 @@
+.plan-workspace-page {
+    position: relative;
+}
+
+.plan-workspace-page ::deep .surface-card,
+.plan-workspace-page ::deep .workspace-hero,
+.plan-workspace-page ::deep .workspace-stat,
+.plan-workspace-page ::deep .settings-summary,
+.plan-workspace-page ::deep .modal-subsection {
+    border: 1px solid var(--app-border-soft);
+    border-radius: 1.75rem;
+    background: var(--app-surface-card);
+    box-shadow: var(--app-shadow-card);
+}
+
+.plan-workspace-page ::deep .workspace-hero {
+    padding: 1.5rem;
+    background: var(--app-surface-hero);
+}
+
+.hero-chip-row,
+.modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.plan-workspace-page ::deep .muted-kicker,
+.plan-workspace-page ::deep .muted-copy {
+    color: var(--app-text-muted);
+}
+
+.plan-workspace-page ::deep .workspace-title {
+    color: var(--app-text-strong);
+    font-weight: 700;
+    letter-spacing: -0.05em;
+}
+
+.workspace-copy {
+    max-width: 48rem;
+}
+
+.plan-workspace-page ::deep .workspace-copy {
+    max-width: 48rem;
+}
+
+.workspace-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+    height: 100%;
+}
+
+.workspace-stat {
+    padding: 1rem 1.05rem;
+    background: var(--app-surface-muted);
+    display: grid;
+    gap: 0.25rem;
+}
+
+.workspace-stat__label,
+.settings-summary__label {
+    color: var(--app-text-faint);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.workspace-stat__value,
+.settings-summary__value {
+    color: var(--app-text-strong);
+    font-size: 1rem;
+}
+
+.plan-workspace-page ::deep .workspace-overview-grid,
+.plan-workspace-page ::deep .workspace-section-grid,
+.plan-workspace-page ::deep .modal-form-grid {
+    row-gap: 1rem;
+}
+
+.plan-workspace-page ::deep .overview-card,
+.plan-workspace-page ::deep .table-card {
+    padding: 1.25rem;
+    display: grid;
+    gap: 1.15rem;
+}
+
+.settings-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.settings-summary {
+    padding: 0.95rem 1rem;
+    background: var(--app-surface-muted);
+}
+
+.plan-workspace-page ::deep .balance-form-grid {
+    row-gap: 0.85rem;
+}
+
+.plan-workspace-page ::deep .actions-cell {
+    width: 5rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.plan-workspace-page ::deep .modal-subsection {
+    padding: 1rem;
+    background: var(--app-surface-muted);
+}
+
+.plan-workspace-page ::deep .toggle-item {
+    display: flex;
+    align-items: center;
+}
+
 .loading-state {
     min-height: 18rem;
     display: flex;
@@ -5,110 +125,32 @@
     justify-content: center;
 }
 
-.workspace-card {
-    background:
-        radial-gradient(circle at top right, rgba(13, 202, 240, 0.14), transparent 28%),
-        linear-gradient(135deg, rgba(33, 37, 41, 0.98), rgba(43, 48, 53, 0.98));
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f8f9fa;
+.plan-workspace-page ::deep .state-card {
+    min-height: 18rem;
+    padding: 1.25rem;
+    display: grid;
+    gap: 1rem;
+    align-content: center;
 }
 
-.header-actions,
-.workspace-summary,
-.table-toolbar,
 .modal-actions {
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.section-kicker,
-.section-copy {
-    color: rgba(248, 249, 250, 0.72);
-}
-
-.stat-strip {
-    gap: 0.75rem;
-    flex-wrap: wrap;
-}
-
-.panel-card {
-    min-height: 100%;
-    background: linear-gradient(180deg, rgba(43, 48, 53, 0.96), rgba(33, 37, 41, 0.96));
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.recurrence-panel,
-.modal-card {
-    background: rgba(52, 58, 64, 0.94);
-    border: 1px solid rgba(13, 110, 253, 0.18);
-}
-
-.actions-cell {
-    width: 5rem;
-    text-align: right;
-    white-space: nowrap;
-}
-
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1400;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    background: rgba(15, 23, 42, 0.72);
-    backdrop-filter: blur(6px);
-}
-
-.modal-card {
-    width: min(100%, 40rem);
-    max-height: calc(100vh - 3rem);
-    overflow: auto;
-}
-
-.compact-rule-modal {
-    width: min(100%, 42rem);
-}
-
-.compact-form-grid {
-    row-gap: 0.25rem;
-}
-
-.compact-toggle-item {
-    display: flex;
-    align-items: center;
-}
-
-.compact-recurrence-panel {
-    border-color: rgba(13, 110, 253, 0.14);
-}
-
-::deep .compact-rule-modal .mud-input-control {
-    margin-top: 0.125rem;
-    margin-bottom: 0.125rem;
-}
-
-::deep .compact-rule-modal .mud-input-label {
-    font-size: 0.92rem;
-}
-
-::deep .compact-rule-modal .mud-checkbox {
-    margin-top: 0.125rem;
-    margin-bottom: 0.125rem;
-}
-
-::deep .compact-rule-modal .mud-button-root {
-    min-width: 0;
+    justify-content: flex-end;
 }
 
 @media (max-width: 959.98px) {
-    .actions-cell {
-        width: auto;
+    .plan-workspace-page ::deep .workspace-hero,
+    .plan-workspace-page ::deep .overview-card,
+    .plan-workspace-page ::deep .table-card,
+    .plan-workspace-page ::deep .state-card {
+        padding: 1.1rem;
     }
 
-    .compact-rule-modal {
-        width: min(100%, 34rem);
+    .workspace-stat-grid,
+    .settings-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .actions-cell {
+        width: auto;
     }
 }

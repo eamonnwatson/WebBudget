@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
+using PredictiveBudget.Domain.BudgetPlans;
+
 namespace PredictiveBudget.Web.Features.BudgetPlans.Models;
 
 /// <summary>
-/// Binds the modal used to create a new budget plan.
+/// Binds the dashboard modal used to create or edit a budget plan.
 /// </summary>
 public sealed class CreateBudgetPlanFormModel
 {
@@ -28,4 +30,14 @@ public sealed class CreateBudgetPlanFormModel
 
     public static CreateBudgetPlanFormModel CreateDefault()
         => new();
+
+    public static CreateBudgetPlanFormModel CreateFromPlan(BudgetPlan plan)
+        => new()
+        {
+            Name = plan.Name,
+            Currency = plan.Currency,
+            StartingBalance = plan.StartingBalance.Amount,
+            BalanceAsOfDate = plan.BalanceAsOfDate.ToDateTime(TimeOnly.MinValue),
+            TimeZoneId = plan.TimeZoneId
+        };
 }

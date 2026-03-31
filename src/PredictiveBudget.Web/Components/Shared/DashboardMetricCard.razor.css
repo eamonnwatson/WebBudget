@@ -1,0 +1,106 @@
+.dashboard-metric-card-shell {
+    height: 100%;
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card {
+    height: 100%;
+    padding: 1.25rem;
+    border-radius: 1.5rem;
+    border: 1px solid var(--app-border-soft);
+    background: var(--app-surface-card);
+    box-shadow: var(--app-shadow-card);
+    display: grid;
+    gap: 1rem;
+}
+
+.dashboard-metric-card__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dashboard-metric-card__copy {
+    min-width: 0;
+    display: grid;
+    gap: 0.3rem;
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card__label {
+    color: var(--app-text-muted);
+    letter-spacing: 0.14em;
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card__value {
+    color: var(--app-text-strong);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card__detail {
+    color: var(--app-text-muted);
+}
+
+.dashboard-metric-card__icon {
+    width: 3.2rem;
+    height: 3.2rem;
+    flex: 0 0 auto;
+    border-radius: 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--metric-accent-soft, rgba(53, 109, 255, 0.12));
+    color: var(--metric-accent, var(--mud-palette-primary));
+    box-shadow: inset 0 0 0 1px var(--metric-accent-border, rgba(53, 109, 255, 0.16));
+}
+
+.dashboard-metric-card__icon ::deep .mud-icon-root {
+    font-size: 1.35rem;
+}
+
+.dashboard-metric-card__footer {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.dashboard-metric-card__badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: var(--metric-accent-soft, rgba(53, 109, 255, 0.12));
+    color: var(--metric-accent, var(--mud-palette-primary));
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card-primary {
+    --metric-accent: var(--mud-palette-primary);
+    --metric-accent-soft: rgba(53, 109, 255, 0.12);
+    --metric-accent-border: rgba(53, 109, 255, 0.18);
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card-success {
+    --metric-accent: var(--mud-palette-success);
+    --metric-accent-soft: rgba(15, 159, 120, 0.12);
+    --metric-accent-border: rgba(15, 159, 120, 0.2);
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card-warning {
+    --metric-accent: var(--mud-palette-warning);
+    --metric-accent-soft: rgba(245, 158, 11, 0.14);
+    --metric-accent-border: rgba(245, 158, 11, 0.22);
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card-danger {
+    --metric-accent: var(--mud-palette-error);
+    --metric-accent-soft: rgba(220, 76, 100, 0.14);
+    --metric-accent-border: rgba(220, 76, 100, 0.22);
+}
+
+.dashboard-metric-card-shell ::deep .dashboard-metric-card-neutral {
+    --metric-accent: var(--mud-palette-secondary);
+    --metric-accent-soft: rgba(29, 154, 159, 0.12);
+    --metric-accent-border: rgba(29, 154, 159, 0.2);
+}

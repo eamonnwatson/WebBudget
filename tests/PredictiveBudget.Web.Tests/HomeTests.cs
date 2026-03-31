@@ -75,7 +75,7 @@ public sealed class HomeTests
         var context = new WebBudgetPlanContext();
         var service = context.CreateService();
         var component = CreateComponent(service);
-        ReflectionTestHelper.SetPrivateField(component, "_createForm", new CreateBudgetPlanFormModel
+        ReflectionTestHelper.SetPrivateField(component, "_planForm", new CreateBudgetPlanFormModel
         {
             Name = "Trip",
             Currency = "usd",
@@ -90,11 +90,11 @@ public sealed class HomeTests
         var createdPlan = Assert.Single(plans);
         var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
         var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_forecastResult");
-        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_createForm");
+        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_planForm");
 
         Assert.Equal("USD", createdPlan.Currency);
         Assert.Equal(createdPlan.PlanId, selectedPlan.PlanId);
-        Assert.Equal(createdPlan.BalanceAsOfDate, forecastResult.Range.Start);
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), forecastResult.Range.Start);
         Assert.Equal("CAD", resetForm.Currency);
         Assert.Equal(string.Empty, resetForm.Name);
     }
@@ -103,7 +103,7 @@ public sealed class HomeTests
     public void OpenCreatePlanModal_ResetsFormAndShowsCreateModal()
     {
         var component = CreateComponent(new WebBudgetPlanContext().CreateService());
-        ReflectionTestHelper.SetPrivateField(component, "_createForm", new CreateBudgetPlanFormModel
+        ReflectionTestHelper.SetPrivateField(component, "_planForm", new CreateBudgetPlanFormModel
         {
             Name = "Existing",
             Currency = "USD",
@@ -114,9 +114,9 @@ public sealed class HomeTests
 
         ReflectionTestHelper.InvokeVoid(component, "OpenCreatePlanModal");
 
-        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_createForm");
+        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_planForm");
 
-        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showCreatePlanModal"));
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showPlanModal"));
         Assert.Equal("CAD", resetForm.Currency);
         Assert.Equal(string.Empty, resetForm.Name);
     }
@@ -163,12 +163,24 @@ public sealed class HomeTests
     }
 
     [Fact]
-    public void CreateDefaultForecastChartOptions_DisablesDataMarkers()
+    public async Task OpenEditPlanModal_LoadsSelectedPlanIntoEditor()
     {
-        var options = ReflectionTestHelper.InvokeStatic<LineChartOptions>(typeof(Home), "CreateDefaultForecastChartOptions", "CAD");
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+            CancellationToken.None);
+        var component = CreateComponent(service);
+        await ReflectionTestHelper.InvokeAsync(component, "OnInitializedAsync");
 
-        Assert.False(options.ShowDataMarkers);
-        Assert.False(options.ShowLegend);
+        ReflectionTestHelper.InvokeVoid(component, "OpenEditPlanModal");
+
+        var planForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_planForm");
+
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showPlanModal"));
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_isEditingPlan"));
+        Assert.Equal(plan.Name, planForm.Name);
+        Assert.Equal(plan.TimeZoneId, planForm.TimeZoneId);
     }
 
     [Fact]
@@ -186,6 +198,51 @@ public sealed class HomeTests
         Assert.NotNull(match);
         Assert.Equal(125m, match.EndOfDayBalance.Amount);
         Assert.Null(missing);
+    }
+
+    [Fact]
+    public void BuildHealthState_ReturnsHealthyWhenWindowStaysPositive()
+    {
+        var forecast = new ForecastResult(
+            new PredictiveBudget.Domain.Common.DateRange(new DateOnly(2026, 3, 20), new DateOnly(2026, 3, 27)),
+            [],
+            new ForecastSummary(
+                new Money(120m, "CAD"),
+                new DateOnly(2026, 3, 22),
+                new Money(185m, "CAD"),
+                new DateOnly(2026, 3, 26),
+                null),
+            [],
+            []);
+
+        var state = ReflectionTestHelper.InvokeStatic<object>(typeof(Home), "BuildHealthState", forecast, new DateOnly(2026, 3, 20));
+
+        Assert.Equal("healthy", ReflectionTestHelper.GetPropertyValue<string>(state, "Tone"));
+        Assert.Equal("Healthy", ReflectionTestHelper.GetPropertyValue<string>(state, "Badge"));
+        Assert.Equal("Window stays above zero", ReflectionTestHelper.GetPropertyValue<string>(state, "Heading"));
+    }
+
+    [Fact]
+    public void BuildHealthState_ReturnsRiskWhenBelowZeroIsImminent()
+    {
+        var firstBelowZero = new DateOnly(2026, 3, 25);
+        var forecast = new ForecastResult(
+            new PredictiveBudget.Domain.Common.DateRange(new DateOnly(2026, 3, 20), new DateOnly(2026, 4, 5)),
+            [],
+            new ForecastSummary(
+                new Money(-25m, "CAD"),
+                firstBelowZero,
+                new Money(210m, "CAD"),
+                new DateOnly(2026, 3, 20),
+                firstBelowZero),
+            [firstBelowZero, firstBelowZero.AddDays(1)],
+            []);
+
+        var state = ReflectionTestHelper.InvokeStatic<object>(typeof(Home), "BuildHealthState", forecast, new DateOnly(2026, 3, 20));
+
+        Assert.Equal("risk", ReflectionTestHelper.GetPropertyValue<string>(state, "Tone"));
+        Assert.Equal("Risk", ReflectionTestHelper.GetPropertyValue<string>(state, "Badge"));
+        Assert.Equal("Below zero in 5 days", ReflectionTestHelper.GetPropertyValue<string>(state, "Heading"));
     }
 
     [Fact]

@@ -1,0 +1,63 @@
+@if (Visible)
+{
+    <div class="budget-modal-backdrop" @onclick="HandleCloseAsync">
+        <MudPaper Class="@ModalClass" Elevation="0" @onclick:stopPropagation="true">
+            <MudStack Spacing="3">
+                <div class="budget-modal-header">
+                    <div class="budget-modal-header__copy">
+                        @if (!string.IsNullOrWhiteSpace(Kicker))
+                        {
+                            <MudText Typo="Typo.overline" Class="budget-modal-kicker">@Kicker</MudText>
+                        }
+
+                        <MudText Typo="Typo.h5" Class="budget-modal-title">@Title</MudText>
+
+                        @if (!string.IsNullOrWhiteSpace(Description))
+                        {
+                            <MudText Typo="Typo.body2" Class="budget-modal-description">@Description</MudText>
+                        }
+                    </div>
+
+                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                   Color="Color.Secondary"
+                                   Class="budget-modal-close"
+                                   OnClick="HandleCloseAsync" />
+                </div>
+
+                @ChildContent
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    private string ModalClass
+        => $"budget-modal-shell {(Wide ? "budget-modal-shell-wide" : string.Empty)} {Class}".Trim();
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public string? Kicker { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public bool Wide { get; set; }
+
+    private Task HandleCloseAsync()
+        => OnClose.InvokeAsync();
+}
