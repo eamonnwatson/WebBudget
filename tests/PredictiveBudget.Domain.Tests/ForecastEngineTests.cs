@@ -195,6 +195,47 @@ public sealed class ForecastEngineTests
     }
 
     [Fact]
+    public void Forecast_RollsBackFromBalanceAsOfDateInsideVisibleRange()
+    {
+        var plan = new BudgetPlan(
+            Guid.NewGuid(),
+            "Household",
+            "CAD",
+            new Money(100m, "CAD"),
+            new DateOnly(2026, 3, 20),
+            "America/Halifax");
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            Guid.NewGuid(),
+            plan.PlanId,
+            new DateOnly(2026, 3, 18),
+            "Payday",
+            TransactionDirection.Inflow,
+            new Money(50m, "CAD")));
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            Guid.NewGuid(),
+            plan.PlanId,
+            new DateOnly(2026, 3, 19),
+            "Groceries",
+            TransactionDirection.Outflow,
+            new Money(20m, "CAD")));
+        plan.AddPlannedTransaction(new PlannedTransaction(
+            Guid.NewGuid(),
+            plan.PlanId,
+            new DateOnly(2026, 3, 20),
+            "Rent",
+            TransactionDirection.Outflow,
+            new Money(15m, "CAD")));
+
+        var engine = new ForecastEngine();
+
+        var result = engine.Forecast(plan, new DateRange(new DateOnly(2026, 3, 18), new DateOnly(2026, 3, 20)));
+
+        Assert.Equal(120m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 18)).EndOfDayBalance.Amount);
+        Assert.Equal(100m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 19)).EndOfDayBalance.Amount);
+        Assert.Equal(85m, result.DailyPoints.Single(point => point.Date == new DateOnly(2026, 3, 20)).EndOfDayBalance.Amount);
+    }
+
+    [Fact]
     public void Forecast_PreservesOriginalDateAndAlertLeadTimeAcrossOverrides()
     {
         var plan = CreatePlan();

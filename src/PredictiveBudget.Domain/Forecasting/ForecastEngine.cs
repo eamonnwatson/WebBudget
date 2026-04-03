@@ -10,10 +10,10 @@ public sealed class ForecastEngine : IForecastEngine
 {
     public ForecastResult Forecast(BudgetPlan plan, DateRange range)
     {
-        // Forecasting may need to expand earlier than the visible window so the opening balance is accurate.
-        var expansionRange = plan.BalanceAsOfDate < range.Start
-            ? new DateRange(plan.BalanceAsOfDate, range.End)
-            : range;
+        // Expand across both the requested window and the saved checkpoint so opening balances stay accurate.
+        var expansionRange = new DateRange(
+            plan.BalanceAsOfDate < range.Start ? plan.BalanceAsOfDate : range.Start,
+            plan.BalanceAsOfDate > range.End ? plan.BalanceAsOfDate : range.End);
         var occurrences = ExpandOccurrences(plan, expansionRange);
         var visibleOccurrences = occurrences
             .Where(occurrence => occurrence.Date >= range.Start && occurrence.Date <= range.End)
@@ -32,7 +32,7 @@ public sealed class ForecastEngine : IForecastEngine
 
         // Walk every day in the requested window so the chart always has contiguous points.
         var points = new List<DailyBalancePoint>();
-        var balance = RollForwardToRangeStart(plan, occurrences, range.Start);
+        var balance = CalculateOpeningBalanceAtDate(plan, occurrences, range.Start);
 
         var date = range.Start;
         while (date <= range.End)
@@ -61,20 +61,28 @@ public sealed class ForecastEngine : IForecastEngine
             visibleOccurrences);
     }
 
-    private static Money RollForwardToRangeStart(BudgetPlan plan, IReadOnlyList<CashflowOccurrence> occurrences, DateOnly rangeStart)
+    private static Money CalculateOpeningBalanceAtDate(BudgetPlan plan, IReadOnlyList<CashflowOccurrence> occurrences, DateOnly targetDate)
     {
         var balance = plan.StartingBalance;
 
-        if (plan.BalanceAsOfDate >= rangeStart)
+        if (plan.BalanceAsOfDate == targetDate)
         {
             return balance;
         }
 
-        foreach (var occurrence in occurrences.Where(occurrence => occurrence.Date >= plan.BalanceAsOfDate && occurrence.Date < rangeStart))
+        bool targetIsAfterCheckpoint = targetDate > plan.BalanceAsOfDate;
+        var windowStart = targetIsAfterCheckpoint ? plan.BalanceAsOfDate : targetDate;
+        var windowEnd = targetIsAfterCheckpoint ? targetDate : plan.BalanceAsOfDate;
+
+        foreach (var occurrence in occurrences.Where(occurrence => occurrence.Date >= windowStart && occurrence.Date < windowEnd))
         {
-            balance = occurrence.Direction == TransactionDirection.Inflow
-                ? new Money(balance.Amount + occurrence.Amount.Amount, plan.Currency)
-                : new Money(balance.Amount - occurrence.Amount.Amount, plan.Currency);
+            var signedAmount = occurrence.Direction == TransactionDirection.Inflow
+                ? occurrence.Amount.Amount
+                : -occurrence.Amount.Amount;
+
+            balance = targetIsAfterCheckpoint
+                ? new Money(balance.Amount + signedAmount, plan.Currency)
+                : new Money(balance.Amount - signedAmount, plan.Currency);
         }
 
         return balance;

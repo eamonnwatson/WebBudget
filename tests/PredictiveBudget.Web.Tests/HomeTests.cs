@@ -149,6 +149,29 @@ public sealed class HomeTests
     }
 
     [Fact]
+    public async Task OnInitializedAsync_TransactionForecastKeepsTodayBalanceWhenCheckpointIsToday()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var context = new WebBudgetPlanContext();
+        var service = context.CreateService();
+        var plan = await service.CreateAsync(
+            new CreateBudgetPlanRequest("Household", "CAD", 100m, today, "America/Halifax"),
+            CancellationToken.None);
+        await service.AddPlannedTransactionAsync(
+            plan.PlanId,
+            new AddPlannedTransactionRequest(today.AddDays(-5), "Recent bill", TransactionDirection.Outflow, 25m),
+            CancellationToken.None);
+        var component = CreateComponent(service);
+
+        await ReflectionTestHelper.InvokeAsync(component, "OnInitializedAsync");
+
+        var transactionForecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_transactionForecastResult");
+        var todayPoint = transactionForecastResult.DailyPoints.Single(point => point.Date == today);
+
+        Assert.Equal(100m, todayPoint.EndOfDayBalance.Amount);
+    }
+
+    [Fact]
     public void HelperMethods_FormatValuesForDisplay()
     {
         Assert.Equal(

@@ -40,7 +40,7 @@ public sealed class CalendarSubscriptionService(
             ct);
 
         var visibleEvents = forecast.Occurrences
-            .Zip(BuildRunningBalances(plan, forecast.Occurrences), static (occurrence, runningBalance) => new CalendarEvent(occurrence, runningBalance))
+            .Zip(BuildRunningBalances(forecast), static (occurrence, runningBalance) => new CalendarEvent(occurrence, runningBalance))
             .Where(entry => entry.Occurrence.Date >= historyStart)
             .ToList();
         var belowZeroRanges = BuildBelowZeroRanges(forecast.DailyPoints, historyStart);
@@ -103,19 +103,29 @@ public sealed class CalendarSubscriptionService(
         return builder.ToString();
     }
 
-    private static IReadOnlyList<Money> BuildRunningBalances(BudgetPlan plan, IReadOnlyList<CashflowOccurrence> occurrences)
+    private static IReadOnlyList<Money> BuildRunningBalances(ForecastResult forecast)
     {
-        var runningBalances = new List<Money>(occurrences.Count);
-        var balance = plan.StartingBalance;
+        var closingBalances = forecast.DailyPoints.ToDictionary(point => point.Date, point => point.EndOfDayBalance);
+        var runningBalances = new List<Money>(forecast.Occurrences.Count);
 
-        foreach (var occurrence in occurrences)
+        foreach (var day in forecast.Occurrences.GroupBy(occurrence => occurrence.Date).OrderBy(group => group.Key))
         {
-            var delta = occurrence.Direction == TransactionDirection.Inflow
-                ? occurrence.Amount
-                : new Money(-occurrence.Amount.Amount, occurrence.Amount.Currency);
+            var dayClosingBalance = closingBalances[day.Key];
+            var dayNet = day.Aggregate(0m, static (total, occurrence) =>
+                total + (occurrence.Direction == TransactionDirection.Inflow
+                    ? occurrence.Amount.Amount
+                    : -occurrence.Amount.Amount));
+            var runningBalance = new Money(dayClosingBalance.Amount - dayNet, dayClosingBalance.Currency);
 
-            balance += delta;
-            runningBalances.Add(balance);
+            foreach (var occurrence in day)
+            {
+                var signedAmount = occurrence.Direction == TransactionDirection.Inflow
+                    ? occurrence.Amount.Amount
+                    : -occurrence.Amount.Amount;
+
+                runningBalance = new Money(runningBalance.Amount + signedAmount, runningBalance.Currency);
+                runningBalances.Add(runningBalance);
+            }
         }
 
         return runningBalances;

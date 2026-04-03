@@ -146,6 +146,32 @@ public sealed class CalendarSubscriptionEndpointTests
     }
 
     [Fact]
+    public async Task GetCalendar_RecentTransactionRunningBalanceStaysAnchoredToTodayCheckpoint()
+    {
+        await using var factory = new TestWebApplicationFactory();
+        var plan = await factory.WithBudgetPlanServiceAsync(async service =>
+        {
+            var createdPlan = await service.CreateAsync(
+                new CreateBudgetPlanRequest("Household", "CAD", 100m, new DateOnly(2026, 3, 20), "America/Halifax"),
+                CancellationToken.None);
+            var updatedPlan = await service.AddPlannedTransactionAsync(
+                createdPlan.PlanId,
+                new AddPlannedTransactionRequest(new DateOnly(2026, 3, 19), "Recent bill", TransactionDirection.Outflow, 25m),
+                CancellationToken.None);
+            return await service.EnsureCalendarSubscriptionTokenAsync(updatedPlan.PlanId, CancellationToken.None);
+        });
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics");
+        var calendar = (await response.Content.ReadAsStringAsync()).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("SUMMARY:Recent bill (-25.00 CAD)", calendar);
+        Assert.Contains("Projected balance after transaction: 100.00 CAD", calendar);
+        Assert.DoesNotContain("Projected balance after transaction: 75.00 CAD", calendar);
+    }
+
+    [Fact]
     public async Task GetCalendar_WhenBalanceDropsBelowZero_AddsContiguousBelowZeroEvent()
     {
         await using var factory = new TestWebApplicationFactory();
