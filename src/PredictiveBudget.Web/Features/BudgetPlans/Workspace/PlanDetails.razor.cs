@@ -53,6 +53,7 @@ public partial class PlanDetails : ComponentBase
     private Guid? _editingRecurringRuleId;
     private Guid? _editingPlannedTransactionId;
     private Guid? _editingOverrideId;
+    private HashSet<DateOnly> _overrideValidDates = [];
     private Guid? _deleteTargetId;
     private DeleteTargetKind? _deleteTargetKind;
     private string _deleteModalTitle = string.Empty;
@@ -355,7 +356,7 @@ public partial class PlanDetails : ComponentBase
             NewAmount = overrideEntry.NewAmount?.Amount,
             NewName = overrideEntry.NewName
         };
-        SyncOverrideSourceSelection();
+        SyncOverrideSourceSelection(defaultDate: false);
         _showOverrideModal = true;
     }
 
@@ -707,12 +708,13 @@ public partial class PlanDetails : ComponentBase
         return form;
     }
 
-    private void SyncOverrideSourceSelection()
+    private void SyncOverrideSourceSelection(bool defaultDate = true)
     {
         var options = GetSourceOptions(_overrideForm.Source);
         if (options.Count == 0)
         {
             _overrideForm.SourceId = string.Empty;
+            _overrideValidDates = [];
             return;
         }
 
@@ -720,6 +722,70 @@ public partial class PlanDetails : ComponentBase
         if (options.All(option => option.Id != _overrideForm.SourceId))
         {
             _overrideForm.SourceId = options[0].Id;
+            defaultDate = true;
         }
+
+        _overrideValidDates = ComputeValidOccurrenceDates(_overrideForm.SourceId, _overrideForm.Source);
+
+        if (defaultDate && _overrideValidDates.Count > 0)
+        {
+            _overrideForm.OriginalDate = GetNextOccurrenceDate(_overrideValidDates).ToDateTime(TimeOnly.MinValue);
+        }
+    }
+
+    private void OnOverrideSourceItemChanged(string sourceId)
+    {
+        _overrideForm.SourceId = sourceId;
+        _overrideValidDates = ComputeValidOccurrenceDates(sourceId, _overrideForm.Source);
+
+        if (_overrideValidDates.Count > 0)
+        {
+            _overrideForm.OriginalDate = GetNextOccurrenceDate(_overrideValidDates).ToDateTime(TimeOnly.MinValue);
+        }
+    }
+
+    private HashSet<DateOnly> ComputeValidOccurrenceDates(string sourceId, OccurrenceSource source)
+    {
+        if (_plan is null || string.IsNullOrEmpty(sourceId))
+            return [];
+
+        if (source == OccurrenceSource.RecurringRule)
+        {
+            if (!Guid.TryParse(sourceId, out var ruleId)) return [];
+            var rule = _plan.RecurringRules.FirstOrDefault(r => r.RuleId == ruleId);
+            if (rule is null) return [];
+
+            var rangeEnd = rule.EffectiveEndDate ?? DateOnly.FromDateTime(DateTime.Today.AddYears(5));
+            return rule.Recurrence
+                .Expand(rule.EffectiveStartDate, rangeEnd, rule.EffectiveStartDate)
+                .Where(d => rule.IsEffectiveOn(d))
+                .ToHashSet();
+        }
+
+        if (source == OccurrenceSource.PlannedTransaction)
+        {
+            if (!Guid.TryParse(sourceId, out var txnId)) return [];
+            var txn = _plan.PlannedTransactions.FirstOrDefault(t => t.TransactionId == txnId);
+            if (txn is null) return [];
+
+            return [txn.Date];
+        }
+
+        return [];
+    }
+
+    private static DateOnly GetNextOccurrenceDate(HashSet<DateOnly> dates)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        return dates.Where(d => d >= today).OrderBy(d => d).FirstOrDefault()
+               is DateOnly next && next != default
+            ? next
+            : dates.OrderBy(d => d).First();
+    }
+
+    private bool IsOriginalDateDisabled(DateTime dt)
+    {
+        if (_overrideValidDates.Count == 0) return false;
+        return !_overrideValidDates.Contains(DateOnly.FromDateTime(dt));
     }
 }

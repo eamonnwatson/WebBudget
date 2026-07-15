@@ -35,6 +35,10 @@ public partial class Home : ComponentBase
     private bool _isLoading = true;
     private bool _showDeletePlanModal;
     private bool _showPlanModal;
+    private OccurrenceOverrideFormModel _overrideForm = OccurrenceOverrideFormModel.CreateDefault();
+    private Guid? _editingOverrideId;
+    private bool _showOverrideModal;
+    private string _overrideModalDescription = string.Empty;
 
     protected override async Task OnInitializedAsync()
         => await LoadPlansAsync(resetForecastWindow: true);
@@ -101,6 +105,119 @@ public partial class Home : ComponentBase
         _deletePlanName = string.Empty;
         _editingPlanId = null;
         _isEditingPlan = false;
+        _showOverrideModal = false;
+        _editingOverrideId = null;
+    }
+
+    private string OverrideModalTitle
+        => _editingOverrideId.HasValue ? "Edit occurrence override" : "Add occurrence override";
+
+    private OccurrenceOverride? FindExistingOverride(ForecastOccurrenceRow row)
+    {
+        if (_selectedPlan is null || row.Source is null || row.SourceId is null)
+        {
+            return null;
+        }
+
+        return _selectedPlan.Overrides.FirstOrDefault(o =>
+            o.Source == row.Source.Value &&
+            o.SourceId == row.SourceId.Value &&
+            o.OriginalDate == row.OriginalDate);
+    }
+
+    private void OpenOverrideModal(ForecastOccurrenceRow row)
+    {
+        if (_selectedPlan is null || row.Source is null || row.SourceId is null)
+        {
+            return;
+        }
+
+        CloseAllModals();
+
+        var existing = FindExistingOverride(row);
+        _overrideModalDescription = $"{row.Name} on {FormatDate(row.OriginalDate)}";
+
+        if (existing is not null)
+        {
+            _editingOverrideId = existing.OverrideId;
+            _overrideForm = new OccurrenceOverrideFormModel
+            {
+                Source = existing.Source,
+                SourceId = existing.SourceId.ToString(),
+                OriginalDate = existing.OriginalDate.ToDateTime(TimeOnly.MinValue),
+                Action = existing.Action,
+                NewDate = existing.NewDate?.ToDateTime(TimeOnly.MinValue),
+                NewAmount = existing.NewAmount?.Amount,
+                NewName = existing.NewName
+            };
+        }
+        else
+        {
+            _editingOverrideId = null;
+            _overrideForm = new OccurrenceOverrideFormModel
+            {
+                Source = row.Source.Value,
+                SourceId = row.SourceId.Value.ToString(),
+                OriginalDate = row.OriginalDate.ToDateTime(TimeOnly.MinValue),
+                Action = OverrideAction.Skip
+            };
+        }
+
+        _showOverrideModal = true;
+    }
+
+    private async Task SaveOverrideAsync()
+    {
+        if (_selectedPlan is null)
+        {
+            return;
+        }
+
+        BudgetPlan updatedPlan;
+
+        if (_editingOverrideId.HasValue)
+        {
+            updatedPlan = await BudgetPlanService.UpdateOverrideAsync(
+                _selectedPlan.PlanId,
+                _editingOverrideId.Value,
+                new UpdateOccurrenceOverrideRequest(
+                    _overrideForm.Source,
+                    Guid.Parse(_overrideForm.SourceId),
+                    ToDateOnly(_overrideForm.OriginalDate),
+                    _overrideForm.Action,
+                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
+                    _overrideForm.NewAmount,
+                    _overrideForm.NewName),
+                CancellationToken.None);
+
+            Snackbar.Add("Occurrence override updated.", Severity.Success);
+        }
+        else
+        {
+            updatedPlan = await BudgetPlanService.AddOverrideAsync(
+                _selectedPlan.PlanId,
+                new AddOccurrenceOverrideRequest(
+                    _overrideForm.Source,
+                    Guid.Parse(_overrideForm.SourceId),
+                    ToDateOnly(_overrideForm.OriginalDate),
+                    _overrideForm.Action,
+                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
+                    _overrideForm.NewAmount,
+                    _overrideForm.NewName),
+                CancellationToken.None);
+
+            Snackbar.Add("Occurrence override added.", Severity.Success);
+        }
+
+        int updatedIndex = _plans.FindIndex(p => p.PlanId == updatedPlan.PlanId);
+        if (updatedIndex >= 0)
+        {
+            _plans[updatedIndex] = updatedPlan;
+        }
+
+        _selectedPlan = updatedPlan;
+        CloseAllModals();
+        await RunForecastAsync(showSnackbar: false);
     }
 
     private async Task CreatePlanAsync()
@@ -365,12 +482,15 @@ public partial class Home : ComponentBase
         var rows = result.Occurrences
             .Select(occurrence => new ForecastOccurrenceRow(
                 occurrence.Date,
+                occurrence.OriginalDate,
                 occurrence.Name,
                 GetOccurrenceSourceLabel(occurrence),
                 occurrence.Direction,
                 occurrence.Amount,
                 dailyBalances[occurrence.Date],
-                false))
+                false,
+                occurrence.Source,
+                occurrence.SourceId))
             .ToList();
 
         if (!dailyBalances.TryGetValue(today, out var todayBalance))
@@ -380,12 +500,15 @@ public partial class Home : ComponentBase
 
         var currentBalanceRow = new ForecastOccurrenceRow(
             today,
+            today,
             "Current balance",
             "Live checkpoint",
             null,
             null,
             todayBalance,
-            true);
+            true,
+            null,
+            null);
 
         int lastTodayIndex = rows.FindLastIndex(row => row.Date == today);
         if (lastTodayIndex >= 0)
@@ -502,12 +625,15 @@ public partial class Home : ComponentBase
 
     private sealed record ForecastOccurrenceRow(
         DateOnly Date,
+        DateOnly OriginalDate,
         string Name,
         string SourceLabel,
         TransactionDirection? Direction,
         Money? Amount,
         Money EndOfDayBalance,
-        bool IsCurrentBalance);
+        bool IsCurrentBalance,
+        OccurrenceSource? Source,
+        Guid? SourceId);
 
     private sealed record DashboardHealthState(string Tone, string Badge, string Heading, string Detail);
 }

@@ -214,6 +214,7 @@
                         <MudTh>Source</MudTh>
                         <MudTh Style="text-align:right;">Amount</MudTh>
                         <MudTh Style="text-align:right;">End-of-day balance</MudTh>
+                        <MudTh Style="text-align:center;">Override</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd DataLabel="Date"
@@ -237,6 +238,18 @@
                                Class="@GetCellClass(context, GetBalanceClass(context))"
                                Style="text-align:right;">
                             @FormatMoney(context.EndOfDayBalance)
+                        </MudTd>
+                        <MudTd DataLabel="Override" Style="text-align:center;" Class="@GetCellClass(context)">
+                            @if (!context.IsCurrentBalance && context.Source is not null)
+                            {
+                                var existingOverride = FindExistingOverride(context);
+                                <MudTooltip Text="@(existingOverride is not null ? "Edit override" : "Add override")">
+                                    <MudIconButton Icon="@(existingOverride is not null ? Icons.Material.Filled.Edit : Icons.Material.Outlined.EditNote)"
+                                                   Size="Size.Small"
+                                                   Color="@(existingOverride is not null ? Color.Warning : Color.Default)"
+                                                   OnClick="@(() => OpenOverrideModal(context))" />
+                                </MudTooltip>
+                            }
                         </MudTd>
                     </RowTemplate>
                 </MudTable>
@@ -387,5 +400,54 @@
             </MudButton>
         </MudStack>
     </MudStack>
+</BudgetModalShell>
+
+<BudgetModalShell Visible="_showOverrideModal"
+                  Title="@OverrideModalTitle"
+                  Kicker="Occurrence overrides"
+                  Description="@_overrideModalDescription"
+                  OnClose="CloseAllModals">
+    <EditForm Model="_overrideForm" OnValidSubmit="SaveOverrideAsync">
+        <DataAnnotationsValidator />
+
+        <MudGrid Class="modal-form-grid">
+            <MudItem xs="12">
+                <MudSelect T="OverrideAction" Label="Action" Variant="Variant.Outlined" @bind-Value="_overrideForm.Action">
+                    <MudSelectItem Value="OverrideAction.Skip">Skip</MudSelectItem>
+                    <MudSelectItem Value="OverrideAction.MoveToDate">Move to date</MudSelectItem>
+                    <MudSelectItem Value="OverrideAction.ReplaceAmount">Replace amount</MudSelectItem>
+                    <MudSelectItem Value="OverrideAction.ReplaceName">Replace name</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            @if (_overrideForm.Action == OverrideAction.MoveToDate)
+            {
+                <MudItem xs="12">
+                    <MudDatePicker Label="New date" Variant="Variant.Outlined" @bind-Date="_overrideForm.NewDate" />
+                </MudItem>
+            }
+            else if (_overrideForm.Action == OverrideAction.ReplaceAmount)
+            {
+                <MudItem xs="12">
+                    <MudNumericField T="decimal?" Label="New amount" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewAmount" />
+                </MudItem>
+            }
+            else if (_overrideForm.Action == OverrideAction.ReplaceName)
+            {
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="New name" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewName" />
+                </MudItem>
+            }
+        </MudGrid>
+
+        <MudStack Row="true" Class="modal-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseAllModals">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary">
+                Save override
+            </MudButton>
+        </MudStack>
+    </EditForm>
 </BudgetModalShell>
 </div>

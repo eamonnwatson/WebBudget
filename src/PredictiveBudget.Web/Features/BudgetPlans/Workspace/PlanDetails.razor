@@ -599,7 +599,9 @@ else
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudSelect T="string" Label="Source item" Variant="Variant.Outlined" @bind-Value="_overrideForm.SourceId">
+                <MudSelect T="string" Label="Source item" Variant="Variant.Outlined"
+                           Value="_overrideForm.SourceId"
+                           ValueChanged="OnOverrideSourceItemChanged">
                     @foreach (var option in GetSourceOptions(_overrideForm.Source))
                     {
                         <MudSelectItem Value="@option.Id">@option.Label</MudSelectItem>
@@ -607,7 +609,9 @@ else
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudDatePicker Label="Original occurrence date" Variant="Variant.Outlined" @bind-Date="_overrideForm.OriginalDate" />
+                <MudDatePicker Label="Original occurrence date" Variant="Variant.Outlined"
+                               @bind-Date="_overrideForm.OriginalDate"
+                               IsDateDisabledFunc="IsOriginalDateDisabled" />
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudSelect T="OverrideAction" Label="Action" Variant="Variant.Outlined" @bind-Value="_overrideForm.Action">
