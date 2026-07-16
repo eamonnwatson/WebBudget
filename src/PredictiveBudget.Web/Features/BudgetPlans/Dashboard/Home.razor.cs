@@ -39,6 +39,7 @@ public partial class Home : ComponentBase
     private Guid? _editingOverrideId;
     private bool _showOverrideModal;
     private string _overrideModalDescription = string.Empty;
+    private bool _mobileDrawerOpen;
 
     protected override async Task OnInitializedAsync()
         => await LoadPlansAsync(resetForecastWindow: true);
@@ -108,6 +109,9 @@ public partial class Home : ComponentBase
         _showOverrideModal = false;
         _editingOverrideId = null;
     }
+
+    private void ToggleMobileDrawer()
+        => _mobileDrawerOpen = !_mobileDrawerOpen;
 
     private string OverrideModalTitle
         => _editingOverrideId.HasValue ? "Edit occurrence override" : "Add occurrence override";

@@ -35,8 +35,8 @@ public sealed class CalendarSubscriptionEndpointTests
         });
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"/subscriptions/plans/{seeded.updatedPlan.PlanId}/{seeded.updatedPlan.CalendarSubscriptionToken}.ics");
-        var calendar = await response.Content.ReadAsStringAsync();
+        var response = await client.GetAsync($"/subscriptions/plans/{seeded.updatedPlan.PlanId}/{seeded.updatedPlan.CalendarSubscriptionToken}.ics", TestContext.Current.CancellationToken);
+        var calendar = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var unfoldedCalendar = calendar.Replace("\r\n ", string.Empty, StringComparison.Ordinal);
         var expectedUid =
             $"{seeded.updatedPlan.PlanId:N}-PlannedTransaction-{seeded.TransactionId:N}-20260321@predictivebudget.local";
@@ -70,7 +70,7 @@ public sealed class CalendarSubscriptionEndpointTests
         });
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/wrong-token.ics");
+        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/wrong-token.ics", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -81,7 +81,7 @@ public sealed class CalendarSubscriptionEndpointTests
         await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"/subscriptions/plans/{Guid.NewGuid()}/missing-token.ics");
+        var response = await client.GetAsync($"/subscriptions/plans/{Guid.NewGuid()}/missing-token.ics", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -99,8 +99,8 @@ public sealed class CalendarSubscriptionEndpointTests
         });
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics");
-        var calendar = await response.Content.ReadAsStringAsync();
+        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics", TestContext.Current.CancellationToken);
+        var calendar = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("BEGIN:VCALENDAR", calendar);
@@ -133,8 +133,8 @@ public sealed class CalendarSubscriptionEndpointTests
         });
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics");
-        var calendar = (await response.Content.ReadAsStringAsync()).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
+        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics", TestContext.Current.CancellationToken);
+        var calendar = (await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("SUMMARY:Recent bill (-25.00 CAD)", calendar);
@@ -162,8 +162,8 @@ public sealed class CalendarSubscriptionEndpointTests
         });
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics");
-        var calendar = (await response.Content.ReadAsStringAsync()).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
+        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics", TestContext.Current.CancellationToken);
+        var calendar = (await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("SUMMARY:Recent bill (-25.00 CAD)", calendar);
@@ -192,8 +192,8 @@ public sealed class CalendarSubscriptionEndpointTests
         });
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics");
-        var calendar = (await response.Content.ReadAsStringAsync()).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
+        var response = await client.GetAsync($"/subscriptions/plans/{plan.PlanId}/{plan.CalendarSubscriptionToken}.ics", TestContext.Current.CancellationToken);
+        var calendar = (await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).Replace("\r\n ", string.Empty, StringComparison.Ordinal);
         var expectedUid = $"{plan.PlanId:N}-BelowZero-20260321-20260323@predictivebudget.local";
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

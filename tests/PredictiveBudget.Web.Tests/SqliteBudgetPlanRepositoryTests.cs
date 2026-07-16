@@ -18,13 +18,13 @@ public sealed class SqliteBudgetPlanRepositoryTests
     public async Task SaveAsync_AndGetAsync_PersistAndReloadPlan()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         var options = new DbContextOptionsBuilder<BudgetDbContext>()
             .UseSqlite(connection)
             .Options;
         await using (var setupContext = new BudgetDbContext(options))
         {
-            await setupContext.Database.EnsureCreatedAsync();
+            await setupContext.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = new SqliteBudgetPlanRepository(new TestDbContextFactory(options));
@@ -48,13 +48,13 @@ public sealed class SqliteBudgetPlanRepositoryTests
     public async Task SaveAsync_UpdatesExistingDocument()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         var options = new DbContextOptionsBuilder<BudgetDbContext>()
             .UseSqlite(connection)
             .Options;
         await using (var setupContext = new BudgetDbContext(options))
         {
-            await setupContext.Database.EnsureCreatedAsync();
+            await setupContext.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = new SqliteBudgetPlanRepository(new TestDbContextFactory(options));
@@ -81,7 +81,7 @@ public sealed class SqliteBudgetPlanRepositoryTests
     public async Task ListAsync_ReturnsPlansOrderedByMostRecentlyUpdated()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         var options = new DbContextOptionsBuilder<BudgetDbContext>()
             .UseSqlite(connection)
             .Options;
@@ -106,9 +106,9 @@ public sealed class SqliteBudgetPlanRepositoryTests
 
         await using (var context = new BudgetDbContext(options))
         {
-            await context.Database.EnsureCreatedAsync();
+            await context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
             context.BudgetPlans.AddRange(olderDocument, newerDocument);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = new SqliteBudgetPlanRepository(new TestDbContextFactory(options));
@@ -122,13 +122,13 @@ public sealed class SqliteBudgetPlanRepositoryTests
     public async Task DeleteAsync_RemovesPersistedPlan()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         var options = new DbContextOptionsBuilder<BudgetDbContext>()
             .UseSqlite(connection)
             .Options;
         await using (var setupContext = new BudgetDbContext(options))
         {
-            await setupContext.Database.EnsureCreatedAsync();
+            await setupContext.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = new SqliteBudgetPlanRepository(new TestDbContextFactory(options));
