@@ -392,21 +392,15 @@ public partial class Home : ComponentBase
 
         var forecastStart = ToDateOnly(_forecastForm.StartDate);
         var forecastEnd = ToDateOnly(_forecastForm.EndDate);
+        var transactionListRange = BuildTransactionListRange(forecastStart, forecastEnd, Today);
 
-        _forecastResult = await BudgetPlanService.ForecastAsync(
+        var combinedResult = await BudgetPlanService.ForecastAsync(
             _selectedPlan.PlanId,
-            new ForecastRequest(
-                forecastStart,
-                forecastEnd),
+            new ForecastRequest(transactionListRange.Start, transactionListRange.End),
             CancellationToken.None);
 
-        var transactionListRange = BuildTransactionListRange(forecastStart, forecastEnd, Today);
-        _transactionForecastResult = transactionListRange.Start == forecastStart && transactionListRange.End == forecastEnd
-            ? _forecastResult
-            : await BudgetPlanService.ForecastAsync(
-                _selectedPlan.PlanId,
-                new ForecastRequest(transactionListRange.Start, transactionListRange.End),
-                CancellationToken.None);
+        _transactionForecastResult = combinedResult;
+        _forecastResult = SliceForecastResult(combinedResult, forecastStart, forecastEnd);
 
         if (showSnackbar)
         {
@@ -473,6 +467,46 @@ public partial class Home : ComponentBase
         var start = forecastStart < historyStart ? forecastStart : historyStart;
         var end = forecastEnd > today ? forecastEnd : today;
         return new PredictiveBudget.Domain.Common.DateRange(start, end);
+    }
+
+    private static ForecastResult SliceForecastResult(ForecastResult source, DateOnly start, DateOnly end)
+    {
+        if (source.Range.Start == start && source.Range.End == end)
+        {
+            return source;
+        }
+
+        var dailyPoints = source.DailyPoints
+            .Where(point => point.Date >= start && point.Date <= end)
+            .ToList();
+
+        if (dailyPoints.Count == 0)
+        {
+            return source;
+        }
+
+        var occurrences = source.Occurrences
+            .Where(occurrence => occurrence.Date >= start && occurrence.Date <= end)
+            .ToList();
+
+        var minPoint = dailyPoints.MinBy(point => point.EndOfDayBalance.Amount)!;
+        var maxPoint = dailyPoints.MaxBy(point => point.EndOfDayBalance.Amount)!;
+        var belowZeroDates = dailyPoints
+            .Where(point => point.EndOfDayBalance.Amount < 0m)
+            .Select(point => point.Date)
+            .ToList();
+
+        return new ForecastResult(
+            new PredictiveBudget.Domain.Common.DateRange(start, end),
+            dailyPoints,
+            new ForecastSummary(
+                minPoint.EndOfDayBalance,
+                minPoint.Date,
+                maxPoint.EndOfDayBalance,
+                maxPoint.Date,
+                belowZeroDates.Count == 0 ? null : belowZeroDates[0]),
+            belowZeroDates,
+            occurrences);
     }
 
     private static IReadOnlyList<ForecastOccurrenceRow> BuildOccurrenceRows(ForecastResult? result, DateOnly today)
