@@ -2,13 +2,13 @@
 @rendermode InteractiveServer
 
 @* Serves as the landing dashboard for plan selection, forecasting, and quick balance updates. *@
-<PageTitle>@(_selectedPlan?.Name ?? "Budget dashboard")</PageTitle>
+<PageTitle>@(selectedPlan?.Name ?? "Budget dashboard")</PageTitle>
 
 <SectionContent SectionName="AppBarActions">
-    @if (_selectedPlan is not null)
+    @if (selectedPlan is not null)
     {
         <MudHidden Breakpoint="Breakpoint.MdAndDown" Invert="false">
-            <EditForm Model="_forecastForm" OnValidSubmit="RunForecastAsync" class="appbar-forecast-form">
+            <EditForm Model="forecastForm" OnValidSubmit="RunForecastAsync" class="appbar-forecast-form">
                 <DataAnnotationsValidator />
 
                 <MudSelect T="Guid"
@@ -17,9 +17,9 @@
                            Margin="Margin.Dense"
                            Variant="Variant.Outlined"
                            Class="appbar-plan-select"
-                           Value="_selectedPlan.PlanId"
+                           Value="selectedPlan.PlanId"
                            ValueChanged="ChangeSelectedPlanAsync">
-                    @foreach (var plan in _plans)
+                    @foreach (var plan in plans)
                     {
                         <MudSelectItem Value="@plan.PlanId">@plan.Name</MudSelectItem>
                     }
@@ -55,12 +55,12 @@
                                Margin="Margin.Dense"
                                Variant="Variant.Outlined"
                                Class="appbar-forecast-field"
-                               @bind-Date="_forecastForm.StartDate" />
+                               @bind-Date="forecastForm.StartDate" />
                 <MudDatePicker Label="End"
                                Margin="Margin.Dense"
                                Variant="Variant.Outlined"
                                Class="appbar-forecast-field"
-                               @bind-Date="_forecastForm.EndDate" />
+                               @bind-Date="forecastForm.EndDate" />
 
                 <MudTooltip Text="Refresh forecast">
                     <MudIconButton Icon="@Icons.Material.Filled.Refresh"
@@ -82,7 +82,7 @@
 <div class="dashboard-page">
 <MudStack Spacing="4">
 
-    @if (_isLoading)
+    @if (isLoading)
     {
         <MudPaper Class="surface-card state-card" Elevation="0">
             <div class="loading-state">
@@ -90,7 +90,7 @@
             </div>
         </MudPaper>
     }
-    else if (_selectedPlan is null)
+    else if (selectedPlan is null)
     {
         <MudPaper Class="surface-card empty-state-card" Elevation="0">
             <MudStack Spacing="3">
@@ -151,8 +151,8 @@
                 <DashboardMetricCard Label="Maximum balance"
                                      Icon="@Icons.Material.Filled.NorthEast"
                                      Tone="success"
-                                     Value="@FormatMoney(_forecastResult!.Summary.MaxBalance)"
-                                     Detail="@FormatDate(_forecastResult.Summary.MaxDate)"
+                                     Value="@FormatMoney(forecastResult!.Summary.MaxBalance)"
+                                     Detail="@FormatDate(forecastResult.Summary.MaxDate)"
                                      Badge="Peak within window" />
             </MudItem>
 
@@ -160,8 +160,8 @@
                 <DashboardMetricCard Label="Minimum balance"
                                      Icon="@Icons.Material.Filled.SouthEast"
                                      Tone="warning"
-                                     Value="@FormatMoney(_forecastResult!.Summary.MinBalance)"
-                                     Detail="@FormatDate(_forecastResult.Summary.MinDate)"
+                                     Value="@FormatMoney(forecastResult!.Summary.MinBalance)"
+                                     Detail="@FormatDate(forecastResult.Summary.MinDate)"
                                      Badge="Lowest point" />
             </MudItem>
 
@@ -169,8 +169,8 @@
                 <DashboardMetricCard Label="First below zero"
                                      Icon="@Icons.Material.Filled.WarningAmber"
                                      Tone="@HealthTone"
-                                     Value="@(_forecastResult!.Summary.FirstBelowZeroDate is DateOnly firstBelowZeroDate ? FormatDate(firstBelowZeroDate) : "Stays positive")"
-                                     Detail="@(_forecastResult.Summary.FirstBelowZeroDate is null ? "No below-zero day appears inside this forecast window." : HealthState.Detail)"
+                                     Value="@(forecastResult!.Summary.FirstBelowZeroDate is DateOnly firstBelowZeroDate ? FormatDate(firstBelowZeroDate) : "Stays positive")"
+                                     Detail="@(forecastResult.Summary.FirstBelowZeroDate is null ? "No below-zero day appears inside this forecast window." : HealthState.Detail)"
                                      Badge="@HealthState.Badge" />
             </MudItem>
         </MudGrid>
@@ -186,9 +186,9 @@
                 </Actions>
             </BudgetSectionHeader>
 
-            <ForecastTrendChart Points="@(_forecastResult?.DailyPoints ?? [])"
-                                Currency="@_selectedPlan.Currency"
-                                FirstBelowZeroDate="@_forecastResult?.Summary.FirstBelowZeroDate" />
+            <ForecastTrendChart Points="@(forecastResult?.DailyPoints ?? [])"
+                                Currency="@selectedPlan.Currency"
+                                FirstBelowZeroDate="@forecastResult?.Summary.FirstBelowZeroDate" />
         </MudPaper>
 
         <MudPaper Class="surface-card transaction-card" Elevation="0">
@@ -294,9 +294,9 @@
                 <MudPaper Class="surface-card reconcile-card" Elevation="0">
                     <BudgetSectionHeader Kicker="Reconcile"
                                          Title="Update balance checkpoint"
-                                         Description="@($"Current checkpoint {FormatMoney(_selectedPlan.StartingBalance)} as of {FormatDate(_selectedPlan.BalanceAsOfDate)}.")" />
+                                         Description="@($"Current checkpoint {FormatMoney(selectedPlan.StartingBalance)} as of {FormatDate(selectedPlan.BalanceAsOfDate)}.")" />
 
-                    <EditForm Model="_balanceForm" OnValidSubmit="SaveBalanceAsync">
+                    <EditForm Model="balanceForm" OnValidSubmit="SaveBalanceAsync">
                         <DataAnnotationsValidator />
 
                         <MudGrid Class="reconcile-form">
@@ -304,12 +304,12 @@
                                 <MudNumericField T="decimal?"
                                                  Label="Balance"
                                                  Variant="Variant.Outlined"
-                                                 @bind-Value="_balanceForm.Amount" />
+                                                 @bind-Value="balanceForm.Amount" />
                             </MudItem>
                             <MudItem xs="12" md="6">
                                 <MudDatePicker Label="Balance as of"
                                                Variant="Variant.Outlined"
-                                               @bind-Date="_balanceForm.BalanceAsOfDate" />
+                                               @bind-Date="balanceForm.BalanceAsOfDate" />
                             </MudItem>
                             <MudItem xs="12">
                                 <MudButton ButtonType="ButtonType.Submit"
@@ -327,13 +327,13 @@
     }
 </MudStack>
 
-<BudgetModalShell Visible="_showPlanModal"
+<BudgetModalShell Visible="showPlanModal"
                   Wide="true"
                   Title="@PlanModalTitle"
                   Kicker="@PlanModalKicker"
                   Description="@PlanModalDescription"
                   OnClose="CloseAllModals">
-    <EditForm Model="_planForm" OnValidSubmit="SavePlanAsync">
+    <EditForm Model="planForm" OnValidSubmit="SavePlanAsync">
         <DataAnnotationsValidator />
 
         <MudGrid Class="plan-modal-grid">
@@ -341,35 +341,35 @@
                 <MudTextField T="string"
                               Label="Plan name"
                               Variant="Variant.Outlined"
-                              @bind-Value="_planForm.Name" />
+                              @bind-Value="planForm.Name" />
             </MudItem>
             <MudItem xs="12" md="2">
                 <MudTextField T="string"
                               Label="Currency"
                               Variant="Variant.Outlined"
-                              Disabled="@_isEditingPlan"
-                              @bind-Value="_planForm.Currency" />
+                              Disabled="@isEditingPlan"
+                              @bind-Value="planForm.Currency" />
             </MudItem>
             <MudItem xs="12" md="3">
                 <MudNumericField T="decimal?"
                                  Label="Starting balance"
                                  Variant="Variant.Outlined"
-                                 @bind-Value="_planForm.StartingBalance" />
+                                 @bind-Value="planForm.StartingBalance" />
             </MudItem>
             <MudItem xs="12" md="2">
                 <MudDatePicker Label="Balance as of"
                                Variant="Variant.Outlined"
-                               @bind-Date="_planForm.BalanceAsOfDate" />
+                               @bind-Date="planForm.BalanceAsOfDate" />
             </MudItem>
             <MudItem xs="12">
                 <MudTextField T="string"
                               Label="Time zone"
                               Variant="Variant.Outlined"
-                              @bind-Value="_planForm.TimeZoneId" />
+                              @bind-Value="planForm.TimeZoneId" />
             </MudItem>
         </MudGrid>
 
-        @if (_isEditingPlan)
+        @if (isEditingPlan)
         {
             <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="my-3">
                 Currency remains fixed once a plan exists so all saved transactions and forecast data stay consistent.
@@ -381,14 +381,14 @@
             <MudButton ButtonType="ButtonType.Submit"
                        Variant="Variant.Filled"
                        Color="Color.Primary"
-                       StartIcon="@(_isEditingPlan ? Icons.Material.Filled.Save : Icons.Material.Filled.AddCircle)">
+                       StartIcon="@(isEditingPlan ? Icons.Material.Filled.Save : Icons.Material.Filled.AddCircle)">
                 @PlanModalSubmitText
             </MudButton>
         </MudStack>
     </EditForm>
 </BudgetModalShell>
 
-<BudgetModalShell Visible="_showDeletePlanModal"
+<BudgetModalShell Visible="showDeletePlanModal"
                   Title="Delete budget plan"
                   Kicker="Destructive action"
                   Description="@DeletePlanMessage"
@@ -410,17 +410,17 @@
     </MudStack>
 </BudgetModalShell>
 
-<BudgetModalShell Visible="_showOverrideModal"
+<BudgetModalShell Visible="showOverrideModal"
                   Title="@OverrideModalTitle"
                   Kicker="Occurrence overrides"
-                  Description="@_overrideModalDescription"
+                  Description="@overrideModalDescription"
                   OnClose="CloseAllModals">
-    <EditForm Model="_overrideForm" OnValidSubmit="SaveOverrideAsync">
+    <EditForm Model="overrideForm" OnValidSubmit="SaveOverrideAsync">
         <DataAnnotationsValidator />
 
         <MudGrid Class="modal-form-grid">
             <MudItem xs="12">
-                <MudSelect T="OverrideAction" Label="Action" Variant="Variant.Outlined" @bind-Value="_overrideForm.Action">
+                <MudSelect T="OverrideAction" Label="Action" Variant="Variant.Outlined" @bind-Value="overrideForm.Action">
                     <MudSelectItem Value="OverrideAction.Skip">Skip</MudSelectItem>
                     <MudSelectItem Value="OverrideAction.MoveToDate">Move to date</MudSelectItem>
                     <MudSelectItem Value="OverrideAction.ReplaceAmount">Replace amount</MudSelectItem>
@@ -428,22 +428,22 @@
                 </MudSelect>
             </MudItem>
 
-            @if (_overrideForm.Action == OverrideAction.MoveToDate)
+            @if (overrideForm.Action == OverrideAction.MoveToDate)
             {
                 <MudItem xs="12">
-                    <MudDatePicker Label="New date" Variant="Variant.Outlined" @bind-Date="_overrideForm.NewDate" />
+                    <MudDatePicker Label="New date" Variant="Variant.Outlined" @bind-Date="overrideForm.NewDate" />
                 </MudItem>
             }
-            else if (_overrideForm.Action == OverrideAction.ReplaceAmount)
+            else if (overrideForm.Action == OverrideAction.ReplaceAmount)
             {
                 <MudItem xs="12">
-                    <MudNumericField T="decimal?" Label="New amount" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewAmount" />
+                    <MudNumericField T="decimal?" Label="New amount" Variant="Variant.Outlined" @bind-Value="overrideForm.NewAmount" />
                 </MudItem>
             }
-            else if (_overrideForm.Action == OverrideAction.ReplaceName)
+            else if (overrideForm.Action == OverrideAction.ReplaceName)
             {
                 <MudItem xs="12">
-                    <MudTextField T="string" Label="New name" Variant="Variant.Outlined" @bind-Value="_overrideForm.NewName" />
+                    <MudTextField T="string" Label="New name" Variant="Variant.Outlined" @bind-Value="overrideForm.NewName" />
                 </MudItem>
             }
         </MudGrid>
@@ -459,10 +459,10 @@
     </EditForm>
 </BudgetModalShell>
 
-<div class="@(_mobileDrawerOpen ? "mobile-drawer-backdrop mobile-drawer-backdrop--open" : "mobile-drawer-backdrop")"
+<div class="@(mobileDrawerOpen ? "mobile-drawer-backdrop mobile-drawer-backdrop--open" : "mobile-drawer-backdrop")"
      @onclick="ToggleMobileDrawer"></div>
 
-<div class="@(_mobileDrawerOpen ? "mobile-drawer mobile-drawer--open" : "mobile-drawer")">
+<div class="@(mobileDrawerOpen ? "mobile-drawer mobile-drawer--open" : "mobile-drawer")">
     <div class="mobile-drawer-content">
         <div class="mobile-drawer-header">
             <MudText Typo="Typo.h6" Class="appbar-title">Forecast Settings</MudText>
@@ -471,18 +471,18 @@
                            OnClick="ToggleMobileDrawer" />
         </div>
 
-        @if (_selectedPlan is not null)
+        @if (selectedPlan is not null)
         {
-            <EditForm Model="_forecastForm" OnValidSubmit="@(async () => { await RunForecastAsync(); _mobileDrawerOpen = false; })" class="mobile-drawer-form">
+            <EditForm Model="forecastForm" OnValidSubmit="@(async () => { await RunForecastAsync(); mobileDrawerOpen = false; })" class="mobile-drawer-form">
                 <DataAnnotationsValidator />
 
                 <MudSelect T="Guid"
                            Label="Plan"
                            Variant="Variant.Outlined"
-                           Value="_selectedPlan.PlanId"
+                           Value="selectedPlan.PlanId"
                            ValueChanged="ChangeSelectedPlanAsync"
                            FullWidth="@true">
-                    @foreach (var plan in _plans)
+                    @foreach (var plan in plans)
                     {
                         <MudSelectItem Value="@plan.PlanId">@plan.Name</MudSelectItem>
                     }
@@ -516,12 +516,12 @@
 
                 <MudDatePicker Label="Start"
                                Variant="Variant.Outlined"
-                               @bind-Date="_forecastForm.StartDate"
+                               @bind-Date="forecastForm.StartDate"
                                Style="width:100%" />
 
                 <MudDatePicker Label="End"
                                Variant="Variant.Outlined"
-                               @bind-Date="_forecastForm.EndDate"
+                               @bind-Date="forecastForm.EndDate"
                                Style="width:100%" />
 
                 <MudButton ButtonType="ButtonType.Submit"
@@ -538,3 +538,7 @@
 </div>
 
 </div>
+
+
+
+

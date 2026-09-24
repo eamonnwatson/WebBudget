@@ -2,6 +2,8 @@
 
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG TARGETARCH
+ARG VERSION
+
 WORKDIR /src
 
 COPY ["Directory.Build.props", "Directory.Packages.props", "PredictiveBudget.sln", "./"]
@@ -18,19 +20,22 @@ RUN dotnet publish "src/PredictiveBudget.Web/PredictiveBudget.Web.csproj" \
     -c Release \
     -o /app/publish \
     -a $TARGETARCH \
-    --no-restore
+    /p:Version=$VERSION \
+    /p:FileVersion=$VERSION \
+    /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+
 WORKDIR /app
 
-ENV ASPNETCORE_URLS=http://+:8080 \
-    ASPNETCORE_ENVIRONMENT=Production \
-    ConnectionStrings__BudgetDb=Data Source=/data/predictivebudget.db
+ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ConnectionStrings__BudgetDb=Data Source=/data/predictivebudget.db
 
 RUN mkdir /data
 
+EXPOSE 80
 VOLUME ["/data"]
-EXPOSE 8080
 
 COPY --from=build /app/publish .
 

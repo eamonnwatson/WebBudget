@@ -27,8 +27,8 @@ public sealed class PlanDetailsTests
 
         await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
 
-        var loadedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan?>(component, "_plan");
-        var balanceForm = ReflectionTestHelper.GetPrivateField<BalanceUpdateFormModel>(component, "_balanceForm");
+        var loadedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan?>(component, "plan");
+        var balanceForm = ReflectionTestHelper.GetPrivateField<BalanceUpdateFormModel>(component, "balanceForm");
         Assert.NotNull(loadedPlan);
         Assert.Equal(125m, balanceForm.Amount);
         Assert.Equal(new DateTime(2026, 3, 20), balanceForm.BalanceAsOfDate);
@@ -48,11 +48,11 @@ public sealed class PlanDetailsTests
             CancellationToken.None);
         var component = CreateComponent(service, plan.PlanId);
         await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
-        ReflectionTestHelper.SetPrivateField(component, "_balanceForm", BalanceUpdateFormModel.CreateDefault(300m, new DateOnly(2026, 3, 25)));
+        ReflectionTestHelper.SetPrivateField(component, "balanceForm", BalanceUpdateFormModel.CreateDefault(300m, new DateOnly(2026, 3, 25)));
 
         await ReflectionTestHelper.InvokeAsync(component, "UpdateBalanceAsync");
 
-        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "plan");
         Assert.Equal(300m, updatedPlan.StartingBalance.Amount);
         Assert.Equal(new DateOnly(2026, 3, 25), updatedPlan.BalanceAsOfDate);
     }
@@ -80,13 +80,13 @@ public sealed class PlanDetailsTests
         };
         form.SelectedWeekdays.Clear();
         form.SelectedWeekdays.Add(Weekday.Friday);
-        ReflectionTestHelper.SetPrivateField(component, "_recurringRuleForm", form);
+        ReflectionTestHelper.SetPrivateField(component, "recurringRuleForm", form);
 
         await ReflectionTestHelper.InvokeAsync(component, "AddRecurringRuleAsync");
 
-        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "plan");
         Assert.Single(updatedPlan.RecurringRules);
-        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "_recurringRuleForm").Name);
+        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "recurringRuleForm").Name);
     }
 
     [Fact]
@@ -121,8 +121,8 @@ public sealed class PlanDetailsTests
 
         ReflectionTestHelper.InvokeVoid(component, "OpenEditRecurringRuleModal", ruleId);
 
-        var form = ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "_recurringRuleForm");
-        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showRecurringRuleModal"));
+        var form = ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "recurringRuleForm");
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "showRecurringRuleModal"));
         Assert.Equal("Payday", form.Name);
         Assert.Equal(TransactionDirection.Inflow, form.Direction);
         Assert.Equal(1000m, form.Amount);
@@ -138,7 +138,7 @@ public sealed class PlanDetailsTests
             CancellationToken.None);
         var component = CreateComponent(service, plan.PlanId);
         await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
-        ReflectionTestHelper.SetPrivateField(component, "_plannedTransactionForm", new PlannedTransactionFormModel
+        ReflectionTestHelper.SetPrivateField(component, "plannedTransactionForm", new PlannedTransactionFormModel
         {
             Name = "Rent",
             Date = new DateTime(2026, 3, 21),
@@ -148,9 +148,9 @@ public sealed class PlanDetailsTests
 
         await ReflectionTestHelper.InvokeAsync(component, "AddPlannedTransactionAsync");
 
-        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "plan");
         Assert.Single(updatedPlan.PlannedTransactions);
-        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<PlannedTransactionFormModel>(component, "_plannedTransactionForm").Name);
+        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<PlannedTransactionFormModel>(component, "plannedTransactionForm").Name);
     }
 
     [Fact]
@@ -172,9 +172,9 @@ public sealed class PlanDetailsTests
         ReflectionTestHelper.InvokeVoid(component, "OpenDeletePlannedTransactionConfirmation", transactionId, "Rent");
         await ReflectionTestHelper.InvokeAsync(component, "ConfirmDeleteAsync");
 
-        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        var updatedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "plan");
         Assert.Empty(updatedPlan.PlannedTransactions);
-        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "_showDeleteModal"));
+        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "showDeleteModal"));
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public sealed class PlanDetailsTests
         var transactionId = updatedPlan.PlannedTransactions.Single().TransactionId;
         var component = CreateComponent(service, plan.PlanId);
         await ReflectionTestHelper.InvokeAsync(component, "OnParametersSetAsync");
-        ReflectionTestHelper.SetPrivateField(component, "_overrideForm", new OccurrenceOverrideFormModel
+        ReflectionTestHelper.SetPrivateField(component, "overrideForm", new OccurrenceOverrideFormModel
         {
             Source = OccurrenceSource.PlannedTransaction,
             SourceId = transactionId.ToString(),
@@ -203,9 +203,9 @@ public sealed class PlanDetailsTests
 
         await ReflectionTestHelper.InvokeAsync(component, "AddOverrideAsync");
 
-        var latestPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_plan");
+        var latestPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "plan");
         Assert.Single(latestPlan.Overrides);
-        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<OccurrenceOverrideFormModel>(component, "_overrideForm").SourceId);
+        Assert.Equal(string.Empty, ReflectionTestHelper.GetPrivateField<OccurrenceOverrideFormModel>(component, "overrideForm").SourceId);
     }
 
     [Fact]
@@ -238,8 +238,8 @@ public sealed class PlanDetailsTests
             TransactionDirection.Outflow,
             new Money(40m, "CAD")));
         var component = new PlanDetails();
-        ReflectionTestHelper.SetPrivateField(component, "_plan", plan);
-        ReflectionTestHelper.SetPrivateField(component, "_recurringRuleForm", RecurringRuleFormModel.CreateDefault());
+        ReflectionTestHelper.SetPrivateField(component, "plan", plan);
+        ReflectionTestHelper.SetPrivateField(component, "recurringRuleForm", RecurringRuleFormModel.CreateDefault());
 
         var recurrenceText = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "DescribeRecurrence", plan.RecurringRules.Single().Recurrence);
         var windowText = ReflectionTestHelper.InvokeStatic<string>(typeof(PlanDetails), "DescribeEffectiveWindow", plan.RecurringRules.Single());
@@ -267,12 +267,12 @@ public sealed class PlanDetailsTests
         var form = RecurringRuleFormModel.CreateDefault();
         form.SelectedWeekdays.Clear();
         form.SelectedMonths.Clear();
-        ReflectionTestHelper.SetPrivateField(component, "_recurringRuleForm", form);
+        ReflectionTestHelper.SetPrivateField(component, "recurringRuleForm", form);
 
         ReflectionTestHelper.InvokeVoid(component, "SetWeekday", Weekday.Friday, true);
         ReflectionTestHelper.InvokeVoid(component, "SetMonth", 12, true);
 
-        var updatedForm = ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "_recurringRuleForm");
+        var updatedForm = ReflectionTestHelper.GetPrivateField<RecurringRuleFormModel>(component, "recurringRuleForm");
         Assert.Contains(Weekday.Friday, updatedForm.SelectedWeekdays);
         Assert.Contains(12, updatedForm.SelectedMonths);
     }
@@ -287,3 +287,4 @@ public sealed class PlanDetailsTests
         return component;
     }
 }
+

@@ -53,7 +53,6 @@
     stroke-width: 3.5;
     stroke-linecap: round;
     stroke-linejoin: round;
-    filter: drop-shadow(0 12px 22px var(--chart-line-glow));
 }
 
 .forecast-trend-chart__hit-area {
@@ -76,7 +75,7 @@
 }
 
 ::deep .forecast-trend-chart__marker-ring {
-    fill: var(--chart-marker-ring, rgba(53, 109, 255, 0.14));
+    fill: var(--chart-marker-ring, color-mix(in srgb, var(--mud-palette-primary) 14%, transparent));
 }
 
 ::deep .forecast-trend-chart__marker-core {
@@ -85,17 +84,17 @@
 
 ::deep .forecast-trend-chart__marker-high {
     --chart-marker-core: var(--mud-palette-success);
-    --chart-marker-ring: rgba(15, 159, 120, 0.14);
+    --chart-marker-ring: color-mix(in srgb, var(--mud-palette-success) 14%, transparent);
 }
 
 ::deep .forecast-trend-chart__marker-low {
     --chart-marker-core: var(--mud-palette-warning);
-    --chart-marker-ring: rgba(245, 158, 11, 0.16);
+    --chart-marker-ring: color-mix(in srgb, var(--mud-palette-warning) 16%, transparent);
 }
 
 ::deep .forecast-trend-chart__marker-risk {
     --chart-marker-core: var(--mud-palette-error);
-    --chart-marker-ring: rgba(220, 76, 100, 0.16);
+    --chart-marker-ring: color-mix(in srgb, var(--mud-palette-error) 16%, transparent);
 }
 
 .forecast-trend-chart__tooltip {
