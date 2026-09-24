@@ -16,13 +16,13 @@ public sealed class BudgetPlan
     public string TimeZoneId { get; private set; }
     public string? CalendarSubscriptionToken { get; private set; }
 
-    private readonly List<RecurringTransactionRule> _recurringRules = new();
-    private readonly List<PlannedTransaction> _plannedTransactions = new();
-    private readonly List<OccurrenceOverride> _overrides = new();
+    private readonly List<RecurringTransactionRule> recurringRules = new();
+    private readonly List<PlannedTransaction> plannedTransactions = new();
+    private readonly List<OccurrenceOverride> overrides = new();
 
-    public IReadOnlyList<RecurringTransactionRule> RecurringRules => _recurringRules;
-    public IReadOnlyList<PlannedTransaction> PlannedTransactions => _plannedTransactions;
-    public IReadOnlyList<OccurrenceOverride> Overrides => _overrides;
+    public IReadOnlyList<RecurringTransactionRule> RecurringRules => recurringRules;
+    public IReadOnlyList<PlannedTransaction> PlannedTransactions => plannedTransactions;
+    public IReadOnlyList<OccurrenceOverride> Overrides => overrides;
 
     public BudgetPlan(
         Guid planId,
@@ -75,20 +75,20 @@ public sealed class BudgetPlan
     {
         if (rule.PlanId != PlanId) throw new InvalidOperationException("Rule does not belong to this plan.");
         if (rule.Amount.Currency != Currency) throw new InvalidOperationException("Currency mismatch.");
-        _recurringRules.Add(rule);
+        recurringRules.Add(rule);
     }
 
     public void AddPlannedTransaction(PlannedTransaction txn)
     {
         if (txn.PlanId != PlanId) throw new InvalidOperationException("Transaction does not belong to this plan.");
         if (txn.Amount.Currency != Currency) throw new InvalidOperationException("Currency mismatch.");
-        _plannedTransactions.Add(txn);
+        plannedTransactions.Add(txn);
     }
 
     public void AddOverride(OccurrenceOverride ov)
     {
         if (ov.PlanId != PlanId) throw new InvalidOperationException("Override does not belong to this plan.");
-        _overrides.Add(ov);
+        overrides.Add(ov);
     }
 
     public void UpdateRecurringRule(
@@ -104,7 +104,7 @@ public sealed class BudgetPlan
     {
         if (amount.Currency != Currency) throw new InvalidOperationException("Currency mismatch.");
 
-        var rule = _recurringRules.FirstOrDefault(candidate => candidate.RuleId == ruleId)
+        var rule = recurringRules.FirstOrDefault(candidate => candidate.RuleId == ruleId)
             ?? throw new InvalidOperationException($"Recurring rule '{ruleId}' was not found.");
 
         rule.Update(
@@ -120,12 +120,12 @@ public sealed class BudgetPlan
 
     public void RemoveRecurringRule(Guid ruleId)
     {
-        var rule = _recurringRules.FirstOrDefault(candidate => candidate.RuleId == ruleId)
+        var rule = recurringRules.FirstOrDefault(candidate => candidate.RuleId == ruleId)
             ?? throw new InvalidOperationException($"Recurring rule '{ruleId}' was not found.");
 
-        _recurringRules.Remove(rule);
+        recurringRules.Remove(rule);
         // Overrides tied to a deleted source can no longer be applied safely.
-        _overrides.RemoveAll(overrideEntry =>
+        overrides.RemoveAll(overrideEntry =>
             overrideEntry.Source == OccurrenceSource.RecurringRule &&
             overrideEntry.SourceId == ruleId);
     }
@@ -134,7 +134,7 @@ public sealed class BudgetPlan
     {
         if (amount.Currency != Currency) throw new InvalidOperationException("Currency mismatch.");
 
-        var transaction = _plannedTransactions.FirstOrDefault(candidate => candidate.TransactionId == transactionId)
+        var transaction = plannedTransactions.FirstOrDefault(candidate => candidate.TransactionId == transactionId)
             ?? throw new InvalidOperationException($"Planned transaction '{transactionId}' was not found.");
 
         transaction.Update(date, name, direction, amount);
@@ -142,12 +142,12 @@ public sealed class BudgetPlan
 
     public void RemovePlannedTransaction(Guid transactionId)
     {
-        var transaction = _plannedTransactions.FirstOrDefault(candidate => candidate.TransactionId == transactionId)
+        var transaction = plannedTransactions.FirstOrDefault(candidate => candidate.TransactionId == transactionId)
             ?? throw new InvalidOperationException($"Planned transaction '{transactionId}' was not found.");
 
-        _plannedTransactions.Remove(transaction);
+        plannedTransactions.Remove(transaction);
         // Keep overrides in sync with the remaining source items.
-        _overrides.RemoveAll(overrideEntry =>
+        overrides.RemoveAll(overrideEntry =>
             overrideEntry.Source == OccurrenceSource.PlannedTransaction &&
             overrideEntry.SourceId == transactionId);
     }
@@ -164,7 +164,7 @@ public sealed class BudgetPlan
     {
         if (newAmount.HasValue && newAmount.Value.Currency != Currency) throw new InvalidOperationException("Currency mismatch.");
 
-        var overrideEntry = _overrides.FirstOrDefault(candidate => candidate.OverrideId == overrideId)
+        var overrideEntry = overrides.FirstOrDefault(candidate => candidate.OverrideId == overrideId)
             ?? throw new InvalidOperationException($"Occurrence override '{overrideId}' was not found.");
 
         overrideEntry.Update(source, sourceId, originalDate, action, newDate, newAmount, newName);
@@ -172,9 +172,10 @@ public sealed class BudgetPlan
 
     public void RemoveOverride(Guid overrideId)
     {
-        var overrideEntry = _overrides.FirstOrDefault(candidate => candidate.OverrideId == overrideId)
+        var overrideEntry = overrides.FirstOrDefault(candidate => candidate.OverrideId == overrideId)
             ?? throw new InvalidOperationException($"Occurrence override '{overrideId}' was not found.");
 
-        _overrides.Remove(overrideEntry);
+        overrides.Remove(overrideEntry);
     }
 }
+

@@ -18,28 +18,28 @@ public partial class Home : ComponentBase
     [Inject] private BudgetPlanService BudgetPlanService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
-    private readonly List<BudgetPlan> _plans = [];
+    private readonly List<BudgetPlan> plans = [];
 
-    private BalanceUpdateFormModel _balanceForm = BalanceUpdateFormModel.CreateDefault(0m, DateOnly.FromDateTime(DateTime.Today));
-    private CreateBudgetPlanFormModel _planForm = CreateBudgetPlanFormModel.CreateDefault();
-    private ForecastFormModel _forecastForm = ForecastFormModel.CreateDefault();
+    private BalanceUpdateFormModel balanceForm = BalanceUpdateFormModel.CreateDefault(0m, DateOnly.FromDateTime(DateTime.Today));
+    private CreateBudgetPlanFormModel planForm = CreateBudgetPlanFormModel.CreateDefault();
+    private ForecastFormModel forecastForm = ForecastFormModel.CreateDefault();
 
-    private BudgetPlan? _selectedPlan;
-    private ForecastResult? _forecastResult;
-    private ForecastResult? _transactionForecastResult;
-    private Guid? _deletePlanId;
-    private string _deletePlanName = string.Empty;
-    private Guid? _editingPlanId;
-    private Guid? _selectedPlanId;
-    private bool _isEditingPlan;
-    private bool _isLoading = true;
-    private bool _showDeletePlanModal;
-    private bool _showPlanModal;
-    private OccurrenceOverrideFormModel _overrideForm = OccurrenceOverrideFormModel.CreateDefault();
-    private Guid? _editingOverrideId;
-    private bool _showOverrideModal;
-    private string _overrideModalDescription = string.Empty;
-    private bool _mobileDrawerOpen;
+    private BudgetPlan? selectedPlan;
+    private ForecastResult? forecastResult;
+    private ForecastResult? transactionForecastResult;
+    private Guid? deletePlanId;
+    private string deletePlanName = string.Empty;
+    private Guid? editingPlanId;
+    private Guid? selectedPlanId;
+    private bool isEditingPlan;
+    private bool isLoading = true;
+    private bool showDeletePlanModal;
+    private bool showPlanModal;
+    private OccurrenceOverrideFormModel overrideForm = OccurrenceOverrideFormModel.CreateDefault();
+    private Guid? editingOverrideId;
+    private bool showOverrideModal;
+    private string overrideModalDescription = string.Empty;
+    private bool mobileDrawerOpen;
 
     protected override async Task OnInitializedAsync()
         => await LoadPlansAsync(resetForecastWindow: true);
@@ -48,23 +48,23 @@ public partial class Home : ComponentBase
         => DateOnly.FromDateTime(DateTime.Today);
 
     private IReadOnlyList<ForecastOccurrenceRow> TransactionRows
-        => BuildOccurrenceRows(_transactionForecastResult, Today);
+        => BuildOccurrenceRows(transactionForecastResult, Today);
 
     private int ForecastWindowDayCount
-        => _forecastResult is null
+        => forecastResult is null
             ? 0
-            : (_forecastResult.Range.End.DayNumber - _forecastResult.Range.Start.DayNumber) + 1;
+            : (forecastResult.Range.End.DayNumber - forecastResult.Range.Start.DayNumber) + 1;
 
     private string ForecastWindowLabel
-        => _forecastForm.StartDate is null || _forecastForm.EndDate is null
+        => forecastForm.StartDate is null || forecastForm.EndDate is null
             ? "Select a forecast window"
-            : $"{_forecastForm.StartDate.Value:MMM d} - {_forecastForm.EndDate.Value:MMM d, yyyy}";
+            : $"{forecastForm.StartDate.Value:MMM d} - {forecastForm.EndDate.Value:MMM d, yyyy}";
 
     private DashboardHealthState HealthState
-        => BuildHealthState(_forecastResult, Today);
+        => BuildHealthState(forecastResult, Today);
 
     private string DeletePlanMessage
-        => $"Delete '{_deletePlanName}'? This removes the plan and its associated rules, transactions, and overrides.";
+        => $"Delete '{deletePlanName}'? This removes the plan and its associated rules, transactions, and overrides.";
 
     private string HealthTone
         => HealthState.Tone switch
@@ -76,54 +76,54 @@ public partial class Home : ComponentBase
         };
 
     private string PlanModalDescription
-        => _isEditingPlan
+        => isEditingPlan
             ? "Update the plan name, reconcile the balance checkpoint, or change the time zone for this forecast."
             : "Create another plan with its own starting balance, currency, and time zone.";
 
     private string PlanModalKicker
-        => _isEditingPlan ? "Plan settings" : "New plan";
+        => isEditingPlan ? "Plan settings" : "New plan";
 
     private string PlanModalSubmitText
-        => _isEditingPlan ? "Save changes" : "Create plan";
+        => isEditingPlan ? "Save changes" : "Create plan";
 
     private string PlanModalTitle
-        => _isEditingPlan ? "Edit budget plan" : "Create a new budget plan";
+        => isEditingPlan ? "Edit budget plan" : "Create a new budget plan";
 
     private DailyBalancePoint? TodayBalancePoint
-        => GetBalancePointForDate(_forecastResult?.DailyPoints ?? [], Today);
+        => GetBalancePointForDate(forecastResult?.DailyPoints ?? [], Today);
 
     private string WorkspaceHref
-        => _selectedPlan is null ? "/" : $"/plans/{_selectedPlan.PlanId}";
+        => selectedPlan is null ? "/" : $"/plans/{selectedPlan.PlanId}";
 
     private async Task ChangeSelectedPlanAsync(Guid planId)
         => await LoadPlansAsync(planId, resetForecastWindow: true);
 
     private void CloseAllModals()
     {
-        _showPlanModal = false;
-        _showDeletePlanModal = false;
-        _deletePlanId = null;
-        _deletePlanName = string.Empty;
-        _editingPlanId = null;
-        _isEditingPlan = false;
-        _showOverrideModal = false;
-        _editingOverrideId = null;
+        showPlanModal = false;
+        showDeletePlanModal = false;
+        deletePlanId = null;
+        deletePlanName = string.Empty;
+        editingPlanId = null;
+        isEditingPlan = false;
+        showOverrideModal = false;
+        editingOverrideId = null;
     }
 
     private void ToggleMobileDrawer()
-        => _mobileDrawerOpen = !_mobileDrawerOpen;
+        => mobileDrawerOpen = !mobileDrawerOpen;
 
     private string OverrideModalTitle
-        => _editingOverrideId.HasValue ? "Edit occurrence override" : "Add occurrence override";
+        => editingOverrideId.HasValue ? "Edit occurrence override" : "Add occurrence override";
 
     private OccurrenceOverride? FindExistingOverride(ForecastOccurrenceRow row)
     {
-        if (_selectedPlan is null || row.Source is null || row.SourceId is null)
+        if (selectedPlan is null || row.Source is null || row.SourceId is null)
         {
             return null;
         }
 
-        return _selectedPlan.Overrides.FirstOrDefault(o =>
+        return selectedPlan.Overrides.FirstOrDefault(o =>
             o.Source == row.Source.Value &&
             o.SourceId == row.SourceId.Value &&
             o.OriginalDate == row.OriginalDate);
@@ -131,7 +131,7 @@ public partial class Home : ComponentBase
 
     private void OpenOverrideModal(ForecastOccurrenceRow row)
     {
-        if (_selectedPlan is null || row.Source is null || row.SourceId is null)
+        if (selectedPlan is null || row.Source is null || row.SourceId is null)
         {
             return;
         }
@@ -139,12 +139,12 @@ public partial class Home : ComponentBase
         CloseAllModals();
 
         var existing = FindExistingOverride(row);
-        _overrideModalDescription = $"{row.Name} on {FormatDate(row.OriginalDate)}";
+        overrideModalDescription = $"{row.Name} on {FormatDate(row.OriginalDate)}";
 
         if (existing is not null)
         {
-            _editingOverrideId = existing.OverrideId;
-            _overrideForm = new OccurrenceOverrideFormModel
+            editingOverrideId = existing.OverrideId;
+            overrideForm = new OccurrenceOverrideFormModel
             {
                 Source = existing.Source,
                 SourceId = existing.SourceId.ToString(),
@@ -157,8 +157,8 @@ public partial class Home : ComponentBase
         }
         else
         {
-            _editingOverrideId = null;
-            _overrideForm = new OccurrenceOverrideFormModel
+            editingOverrideId = null;
+            overrideForm = new OccurrenceOverrideFormModel
             {
                 Source = row.Source.Value,
                 SourceId = row.SourceId.Value.ToString(),
@@ -167,31 +167,31 @@ public partial class Home : ComponentBase
             };
         }
 
-        _showOverrideModal = true;
+        showOverrideModal = true;
     }
 
     private async Task SaveOverrideAsync()
     {
-        if (_selectedPlan is null)
+        if (selectedPlan is null)
         {
             return;
         }
 
         BudgetPlan updatedPlan;
 
-        if (_editingOverrideId.HasValue)
+        if (editingOverrideId.HasValue)
         {
             updatedPlan = await BudgetPlanService.UpdateOverrideAsync(
-                _selectedPlan.PlanId,
-                _editingOverrideId.Value,
+                selectedPlan.PlanId,
+                editingOverrideId.Value,
                 new UpdateOccurrenceOverrideRequest(
-                    _overrideForm.Source,
-                    Guid.Parse(_overrideForm.SourceId),
-                    ToDateOnly(_overrideForm.OriginalDate),
-                    _overrideForm.Action,
-                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
-                    _overrideForm.NewAmount,
-                    _overrideForm.NewName),
+                    overrideForm.Source,
+                    Guid.Parse(overrideForm.SourceId),
+                    ToDateOnly(overrideForm.OriginalDate),
+                    overrideForm.Action,
+                    overrideForm.NewDate is null ? null : ToDateOnly(overrideForm.NewDate),
+                    overrideForm.NewAmount,
+                    overrideForm.NewName),
                 CancellationToken.None);
 
             Snackbar.Add("Occurrence override updated.", Severity.Success);
@@ -199,27 +199,27 @@ public partial class Home : ComponentBase
         else
         {
             updatedPlan = await BudgetPlanService.AddOverrideAsync(
-                _selectedPlan.PlanId,
+                selectedPlan.PlanId,
                 new AddOccurrenceOverrideRequest(
-                    _overrideForm.Source,
-                    Guid.Parse(_overrideForm.SourceId),
-                    ToDateOnly(_overrideForm.OriginalDate),
-                    _overrideForm.Action,
-                    _overrideForm.NewDate is null ? null : ToDateOnly(_overrideForm.NewDate),
-                    _overrideForm.NewAmount,
-                    _overrideForm.NewName),
+                    overrideForm.Source,
+                    Guid.Parse(overrideForm.SourceId),
+                    ToDateOnly(overrideForm.OriginalDate),
+                    overrideForm.Action,
+                    overrideForm.NewDate is null ? null : ToDateOnly(overrideForm.NewDate),
+                    overrideForm.NewAmount,
+                    overrideForm.NewName),
                 CancellationToken.None);
 
             Snackbar.Add("Occurrence override added.", Severity.Success);
         }
 
-        int updatedIndex = _plans.FindIndex(p => p.PlanId == updatedPlan.PlanId);
+        int updatedIndex = plans.FindIndex(p => p.PlanId == updatedPlan.PlanId);
         if (updatedIndex >= 0)
         {
-            _plans[updatedIndex] = updatedPlan;
+            plans[updatedIndex] = updatedPlan;
         }
 
-        _selectedPlan = updatedPlan;
+        selectedPlan = updatedPlan;
         CloseAllModals();
         await RunForecastAsync(showSnackbar: false);
     }
@@ -228,37 +228,37 @@ public partial class Home : ComponentBase
     {
         var plan = await BudgetPlanService.CreateAsync(
             new CreateBudgetPlanRequest(
-                _planForm.Name,
-                _planForm.Currency,
-                _planForm.StartingBalance ?? 0m,
-                ToDateOnly(_planForm.BalanceAsOfDate),
-                _planForm.TimeZoneId),
+                planForm.Name,
+                planForm.Currency,
+                planForm.StartingBalance ?? 0m,
+                ToDateOnly(planForm.BalanceAsOfDate),
+                planForm.TimeZoneId),
             CancellationToken.None);
 
         CloseAllModals();
-        _planForm = CreateBudgetPlanFormModel.CreateDefault();
+        planForm = CreateBudgetPlanFormModel.CreateDefault();
         Snackbar.Add($"Created plan '{plan.Name}'.", Severity.Success);
         await LoadPlansAsync(plan.PlanId, resetForecastWindow: true);
     }
 
     private async Task DeletePlanAsync()
     {
-        if (!_deletePlanId.HasValue)
+        if (!deletePlanId.HasValue)
         {
             return;
         }
 
-        var deletedPlanId = _deletePlanId.Value;
-        var deletedPlanName = _deletePlanName;
+        var deletedPlanId = deletePlanId.Value;
+        var deletedPlanName = deletePlanName;
 
         await BudgetPlanService.DeleteAsync(deletedPlanId, CancellationToken.None);
 
         CloseAllModals();
         Snackbar.Add($"Deleted plan '{deletedPlanName}'.", Severity.Success);
 
-        bool deletedSelectedPlan = _selectedPlanId == deletedPlanId;
+        bool deletedSelectedPlan = selectedPlanId == deletedPlanId;
         await LoadPlansAsync(
-            preferredPlanId: deletedSelectedPlan ? null : _selectedPlanId,
+            preferredPlanId: deletedSelectedPlan ? null : selectedPlanId,
             resetForecastWindow: deletedSelectedPlan);
     }
 
@@ -296,38 +296,38 @@ public partial class Home : ComponentBase
 
     private async Task LoadPlansAsync(Guid? preferredPlanId = null, bool resetForecastWindow = false)
     {
-        _isLoading = true;
+        isLoading = true;
 
         try
         {
-            var previousSelection = _selectedPlanId;
+            var previousSelection = selectedPlanId;
 
-            _plans.Clear();
-            _plans.AddRange(await BudgetPlanService.ListAsync(CancellationToken.None));
+            plans.Clear();
+            plans.AddRange(await BudgetPlanService.ListAsync(CancellationToken.None));
 
-            if (_plans.Count == 0)
+            if (plans.Count == 0)
             {
-                _selectedPlan = null;
-                _selectedPlanId = null;
-                _forecastResult = null;
-                _transactionForecastResult = null;
+                selectedPlan = null;
+                selectedPlanId = null;
+                forecastResult = null;
+                transactionForecastResult = null;
                 CloseAllModals();
                 return;
             }
 
             var targetPlanId = preferredPlanId ?? previousSelection;
-            var selectedPlan = targetPlanId.HasValue
-                ? _plans.FirstOrDefault(plan => plan.PlanId == targetPlanId.Value)
+            var selectedPlanCandidate = targetPlanId.HasValue
+                ? plans.FirstOrDefault(plan => plan.PlanId == targetPlanId.Value)
                 : null;
 
-            var resolvedPlan = selectedPlan ?? _plans[0];
-            bool selectionChanged = _selectedPlanId != resolvedPlan.PlanId;
+            var resolvedPlan = selectedPlanCandidate ?? plans[0];
+            bool selectionChanged = selectedPlanId != resolvedPlan.PlanId;
 
-            _selectedPlan = resolvedPlan;
-            _selectedPlanId = resolvedPlan.PlanId;
-            _balanceForm = BalanceUpdateFormModel.CreateDefault(resolvedPlan.StartingBalance.Amount, resolvedPlan.BalanceAsOfDate);
+            selectedPlan = resolvedPlan;
+            selectedPlanId = resolvedPlan.PlanId;
+            balanceForm = BalanceUpdateFormModel.CreateDefault(resolvedPlan.StartingBalance.Amount, resolvedPlan.BalanceAsOfDate);
 
-            if (resetForecastWindow || selectionChanged || _forecastForm.StartDate is null || _forecastForm.EndDate is null)
+            if (resetForecastWindow || selectionChanged || forecastForm.StartDate is null || forecastForm.EndDate is null)
             {
                 ResetForecastWindow();
             }
@@ -336,71 +336,71 @@ public partial class Home : ComponentBase
         }
         finally
         {
-            _isLoading = false;
+            isLoading = false;
         }
     }
 
     private void OpenCreatePlanModal()
     {
         CloseAllModals();
-        _isEditingPlan = false;
-        _planForm = CreateBudgetPlanFormModel.CreateDefault();
-        _showPlanModal = true;
+        isEditingPlan = false;
+        planForm = CreateBudgetPlanFormModel.CreateDefault();
+        showPlanModal = true;
     }
 
     private void OpenDeletePlanModal()
     {
-        if (_selectedPlan is null)
+        if (selectedPlan is null)
         {
             return;
         }
 
         CloseAllModals();
-        _deletePlanId = _selectedPlan.PlanId;
-        _deletePlanName = _selectedPlan.Name;
-        _showDeletePlanModal = true;
+        deletePlanId = selectedPlan.PlanId;
+        deletePlanName = selectedPlan.Name;
+        showDeletePlanModal = true;
     }
 
     private void OpenEditPlanModal()
     {
-        if (_selectedPlan is null)
+        if (selectedPlan is null)
         {
             return;
         }
 
         CloseAllModals();
-        _editingPlanId = _selectedPlan.PlanId;
-        _isEditingPlan = true;
-        _planForm = CreateBudgetPlanFormModel.CreateFromPlan(_selectedPlan);
-        _showPlanModal = true;
+        editingPlanId = selectedPlan.PlanId;
+        isEditingPlan = true;
+        planForm = CreateBudgetPlanFormModel.CreateFromPlan(selectedPlan);
+        showPlanModal = true;
     }
 
     private void ResetForecastWindow()
-        => _forecastForm = ForecastFormModel.CreateDefault(durationDays: 365);
+        => forecastForm = ForecastFormModel.CreateDefault(durationDays: 365);
 
     private async Task RunForecastAsync()
         => await RunForecastAsync(showSnackbar: true);
 
     private async Task RunForecastAsync(bool showSnackbar)
     {
-        if (_selectedPlan is null)
+        if (selectedPlan is null)
         {
-            _forecastResult = null;
-            _transactionForecastResult = null;
+            forecastResult = null;
+            transactionForecastResult = null;
             return;
         }
 
-        var forecastStart = ToDateOnly(_forecastForm.StartDate);
-        var forecastEnd = ToDateOnly(_forecastForm.EndDate);
+        var forecastStart = ToDateOnly(forecastForm.StartDate);
+        var forecastEnd = ToDateOnly(forecastForm.EndDate);
         var transactionListRange = BuildTransactionListRange(forecastStart, forecastEnd, Today);
 
         var combinedResult = await BudgetPlanService.ForecastAsync(
-            _selectedPlan.PlanId,
+            selectedPlan.PlanId,
             new ForecastRequest(transactionListRange.Start, transactionListRange.End),
             CancellationToken.None);
 
-        _transactionForecastResult = combinedResult;
-        _forecastResult = SliceForecastResult(combinedResult, forecastStart, forecastEnd);
+        transactionForecastResult = combinedResult;
+        forecastResult = SliceForecastResult(combinedResult, forecastStart, forecastEnd);
 
         if (showSnackbar)
         {
@@ -410,16 +410,16 @@ public partial class Home : ComponentBase
 
     private async Task SaveBalanceAsync()
     {
-        if (_selectedPlan is null)
+        if (selectedPlan is null)
         {
             return;
         }
 
         var updatedPlan = await BudgetPlanService.UpdateStartingBalanceAsync(
-            _selectedPlan.PlanId,
+            selectedPlan.PlanId,
             new UpdateStartingBalanceRequest(
-                _balanceForm.Amount ?? 0m,
-                ToDateOnly(_balanceForm.BalanceAsOfDate)),
+                balanceForm.Amount ?? 0m,
+                ToDateOnly(balanceForm.BalanceAsOfDate)),
             CancellationToken.None);
 
         Snackbar.Add("Balance checkpoint updated.", Severity.Success);
@@ -428,7 +428,7 @@ public partial class Home : ComponentBase
 
     private async Task SavePlanAsync()
     {
-        if (_isEditingPlan)
+        if (isEditingPlan)
         {
             await UpdatePlanAsync();
             return;
@@ -442,18 +442,18 @@ public partial class Home : ComponentBase
 
     private async Task UpdatePlanAsync()
     {
-        if (!_editingPlanId.HasValue)
+        if (!editingPlanId.HasValue)
         {
             return;
         }
 
         var updatedPlan = await BudgetPlanService.UpdateAsync(
-            _editingPlanId.Value,
+            editingPlanId.Value,
             new UpdateBudgetPlanRequest(
-                _planForm.Name,
-                _planForm.StartingBalance ?? 0m,
-                ToDateOnly(_planForm.BalanceAsOfDate),
-                _planForm.TimeZoneId),
+                planForm.Name,
+                planForm.StartingBalance ?? 0m,
+                ToDateOnly(planForm.BalanceAsOfDate),
+                planForm.TimeZoneId),
             CancellationToken.None);
 
         CloseAllModals();
@@ -675,3 +675,4 @@ public partial class Home : ComponentBase
 
     private sealed record DashboardHealthState(string Tone, string Badge, string Heading, string Detail);
 }
+

@@ -31,10 +31,10 @@ public sealed class HomeTests
 
         await ReflectionTestHelper.InvokeAsync(component, "OnInitializedAsync");
 
-        var plans = ReflectionTestHelper.GetPrivateField<List<BudgetPlan>>(component, "_plans");
-        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
-        var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "_forecastForm");
-        var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_forecastResult");
+        var plans = ReflectionTestHelper.GetPrivateField<List<BudgetPlan>>(component, "plans");
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "selectedPlan");
+        var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "forecastForm");
+        var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "forecastResult");
         var expectedStartDate = DateTime.Today;
 
         Assert.Equal(2, plans.Count);
@@ -42,7 +42,7 @@ public sealed class HomeTests
         Assert.Equal(expectedStartDate, forecastForm.StartDate);
         Assert.Equal(expectedStartDate.AddDays(365), forecastForm.EndDate);
         Assert.Equal(DateOnly.FromDateTime(expectedStartDate), forecastResult.Range.Start);
-        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "_isLoading"));
+        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "isLoading"));
     }
 
     [Fact]
@@ -61,8 +61,8 @@ public sealed class HomeTests
 
         await ReflectionTestHelper.InvokeAsync(component, "ChangeSelectedPlanAsync", secondPlan.PlanId);
 
-        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
-        var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "_forecastForm");
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "selectedPlan");
+        var forecastForm = ReflectionTestHelper.GetPrivateField<ForecastFormModel>(component, "forecastForm");
 
         Assert.Equal(secondPlan.PlanId, selectedPlan.PlanId);
         Assert.Equal(DateTime.Today, forecastForm.StartDate);
@@ -75,7 +75,7 @@ public sealed class HomeTests
         var context = new WebBudgetPlanContext();
         var service = context.CreateService();
         var component = CreateComponent(service);
-        ReflectionTestHelper.SetPrivateField(component, "_planForm", new CreateBudgetPlanFormModel
+        ReflectionTestHelper.SetPrivateField(component, "planForm", new CreateBudgetPlanFormModel
         {
             Name = "Trip",
             Currency = "usd",
@@ -88,9 +88,9 @@ public sealed class HomeTests
 
         var plans = await service.ListAsync(CancellationToken.None);
         var createdPlan = Assert.Single(plans);
-        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
-        var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_forecastResult");
-        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_planForm");
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "selectedPlan");
+        var forecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "forecastResult");
+        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "planForm");
 
         Assert.Equal("USD", createdPlan.Currency);
         Assert.Equal(createdPlan.PlanId, selectedPlan.PlanId);
@@ -103,7 +103,7 @@ public sealed class HomeTests
     public void OpenCreatePlanModal_ResetsFormAndShowsCreateModal()
     {
         var component = CreateComponent(new WebBudgetPlanContext().CreateService());
-        ReflectionTestHelper.SetPrivateField(component, "_planForm", new CreateBudgetPlanFormModel
+        ReflectionTestHelper.SetPrivateField(component, "planForm", new CreateBudgetPlanFormModel
         {
             Name = "Existing",
             Currency = "USD",
@@ -114,9 +114,9 @@ public sealed class HomeTests
 
         ReflectionTestHelper.InvokeVoid(component, "OpenCreatePlanModal");
 
-        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_planForm");
+        var resetForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "planForm");
 
-        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showPlanModal"));
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "showPlanModal"));
         Assert.Equal("CAD", resetForm.Currency);
         Assert.Equal(string.Empty, resetForm.Name);
     }
@@ -139,13 +139,13 @@ public sealed class HomeTests
 
         await ReflectionTestHelper.InvokeAsync(component, "DeletePlanAsync");
 
-        var plans = ReflectionTestHelper.GetPrivateField<List<BudgetPlan>>(component, "_plans");
-        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "_selectedPlan");
+        var plans = ReflectionTestHelper.GetPrivateField<List<BudgetPlan>>(component, "plans");
+        var selectedPlan = ReflectionTestHelper.GetPrivateField<BudgetPlan>(component, "selectedPlan");
 
         Assert.Single(plans);
         Assert.Equal(firstPlan.PlanId, selectedPlan.PlanId);
         Assert.DoesNotContain(plans, plan => plan.PlanId == secondPlan.PlanId);
-        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "_showDeletePlanModal"));
+        Assert.False(ReflectionTestHelper.GetPrivateField<bool>(component, "showDeletePlanModal"));
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public sealed class HomeTests
 
         await ReflectionTestHelper.InvokeAsync(component, "OnInitializedAsync");
 
-        var transactionForecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "_transactionForecastResult");
+        var transactionForecastResult = ReflectionTestHelper.GetPrivateField<ForecastResult>(component, "transactionForecastResult");
         var todayPoint = transactionForecastResult.DailyPoints.Single(point => point.Date == today);
 
         Assert.Equal(100m, todayPoint.EndOfDayBalance.Amount);
@@ -198,10 +198,10 @@ public sealed class HomeTests
 
         ReflectionTestHelper.InvokeVoid(component, "OpenEditPlanModal");
 
-        var planForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "_planForm");
+        var planForm = ReflectionTestHelper.GetPrivateField<CreateBudgetPlanFormModel>(component, "planForm");
 
-        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_showPlanModal"));
-        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "_isEditingPlan"));
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "showPlanModal"));
+        Assert.True(ReflectionTestHelper.GetPrivateField<bool>(component, "isEditingPlan"));
         Assert.Equal(plan.Name, planForm.Name);
         Assert.Equal(plan.TimeZoneId, planForm.TimeZoneId);
     }
@@ -363,3 +363,4 @@ public sealed class HomeTests
         return component;
     }
 }
+
